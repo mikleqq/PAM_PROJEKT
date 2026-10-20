@@ -1,8 +1,8 @@
 // lib/screens/favorites_screen.dart
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../data/mock_data.dart';
 import '../widgets/master_card.dart';
-import 'master_detail_screen.dart';
 
 class FavoritesScreen extends StatelessWidget {
   const FavoritesScreen({super.key});
@@ -29,12 +29,7 @@ class FavoritesScreen extends StatelessWidget {
                 return MasterCard(
                   master: master,
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => MasterDetailScreen(master: master),
-                      ),
-                    );
+                    context.push('/masters/${master.id}');
                   },
                 );
               },

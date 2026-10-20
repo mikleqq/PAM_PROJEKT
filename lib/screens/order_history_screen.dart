@@ -1,8 +1,8 @@
 // lib/screens/order_history_screen.dart
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../data/mock_data.dart';
 import '../widgets/status_badge.dart';
-import 'order_detail_screen.dart';
 
 class OrderHistoryScreen extends StatelessWidget {
   const OrderHistoryScreen({super.key});
@@ -27,18 +27,13 @@ class OrderHistoryScreen extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
               side: BorderSide(
-                color: colorScheme.outlineVariant.withOpacity(0.5),
+                color: colorScheme.outlineVariant.withValues(alpha: 0.5),
               ),
             ),
             child: InkWell(
               borderRadius: BorderRadius.circular(16),
               onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => OrderDetailScreen(order: order),
-                  ),
-                );
+                context.push('/orders/${order.id}');
               },
               child: Padding(
                 padding: const EdgeInsets.all(16.0),
@@ -155,12 +150,7 @@ class OrderHistoryScreen extends StatelessWidget {
                         ),
                         OutlinedButton(
                           onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => OrderDetailScreen(order: order),
-                              ),
-                            );
+                            context.push('/orders/${order.id}');
                           },
                           style: OutlinedButton.styleFrom(
                             shape: RoundedRectangleBorder(

@@ -1,8 +1,8 @@
 // lib/screens/master_detail_screen.dart
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../data/mock_data.dart';
 import '../widgets/info_row.dart';
-import 'create_order_screen.dart';
 
 class MasterDetailScreen extends StatelessWidget {
   final Master master;
@@ -315,12 +315,7 @@ class MasterDetailScreen extends StatelessWidget {
               height: 52,
               child: FilledButton.icon(
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => CreateOrderScreen(selectedMaster: master),
-                    ),
-                  );
+                  context.push('/create-order?masterId=${master.id}');
                 },
                 icon: const Icon(Icons.add_task),
                 label: const Text(

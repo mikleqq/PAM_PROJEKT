@@ -1,9 +1,9 @@
 // lib/screens/services_catalog_screen.dart
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../data/mock_data.dart';
 import '../widgets/service_category_card.dart';
 import '../widgets/master_card.dart';
-import 'master_detail_screen.dart';
 
 class ServicesCatalogScreen extends StatelessWidget {
   const ServicesCatalogScreen({super.key});
@@ -38,7 +38,7 @@ class ServicesCatalogScreen extends StatelessWidget {
                   onPressed: () {},
                 ),
                 filled: true,
-                fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.5),
+                fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide.none,
@@ -58,7 +58,9 @@ class ServicesCatalogScreen extends StatelessWidget {
                   ),
                 ),
                 TextButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    context.go('/masters');
+                  },
                   child: const Text('Все (8)'),
                 ),
               ],
@@ -79,7 +81,9 @@ class ServicesCatalogScreen extends StatelessWidget {
               itemBuilder: (context, index) {
                 return ServiceCategoryCard(
                   category: mockCategories[index],
-                  onTap: () {},
+                  onTap: () {
+                    context.go('/masters');
+                  },
                 );
               },
             ),
@@ -96,7 +100,9 @@ class ServicesCatalogScreen extends StatelessWidget {
                   ),
                 ),
                 TextButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    context.go('/masters');
+                  },
                   child: const Text('Показать всех'),
                 ),
               ],
@@ -114,12 +120,7 @@ class ServicesCatalogScreen extends StatelessWidget {
                 return MasterCard(
                   master: master,
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => MasterDetailScreen(master: master),
-                      ),
-                    );
+                    context.push('/masters/${master.id}');
                   },
                 );
               },

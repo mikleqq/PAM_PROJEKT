@@ -1,8 +1,8 @@
 // lib/screens/master_list_screen.dart
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../data/mock_data.dart';
 import '../widgets/master_card.dart';
-import 'master_detail_screen.dart';
 
 class MasterListScreen extends StatelessWidget {
   const MasterListScreen({super.key});
@@ -36,7 +36,7 @@ class MasterListScreen extends StatelessWidget {
                 hintText: 'Поиск по имени, услуге или навыку...',
                 prefixIcon: const Icon(Icons.search),
                 filled: true,
-                fillColor: colorScheme.surfaceContainerHighest.withOpacity(0.4),
+                fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(16),
                   borderSide: BorderSide.none,
@@ -105,12 +105,7 @@ class MasterListScreen extends StatelessWidget {
                 return MasterCard(
                   master: master,
                   onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => MasterDetailScreen(master: master),
-                      ),
-                    );
+                    context.push('/masters/${master.id}');
                   },
                 );
               },
