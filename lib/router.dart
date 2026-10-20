@@ -1,0 +1,123 @@
+// lib/router.dart
+import 'package:go_router/go_router.dart';
+import 'data/mock_data.dart';
+import 'widgets/app_shell.dart';
+import 'screens/login_screen.dart';
+import 'screens/services_catalog_screen.dart';
+import 'screens/master_list_screen.dart';
+import 'screens/master_detail_screen.dart';
+import 'screens/order_history_screen.dart';
+import 'screens/order_detail_screen.dart';
+import 'screens/favorites_screen.dart';
+import 'screens/user_profile_screen.dart';
+import 'screens/create_order_screen.dart';
+
+final GoRouter router = GoRouter(
+  initialLocation: '/login',
+  routes: [
+    // Auth Route (Outside shell, no bottom nav bar)
+    GoRoute(
+      path: '/login',
+      builder: (context, state) => const LoginScreen(),
+    ),
+
+    // Create Order Screen Route
+    GoRoute(
+      path: '/create-order',
+      builder: (context, state) {
+        final masterId = state.uri.queryParameters['masterId'];
+        Master? selectedMaster;
+        if (masterId != null) {
+          try {
+            selectedMaster = mockMasters.firstWhere((m) => m.id == masterId);
+          } catch (_) {}
+        }
+        return CreateOrderScreen(selectedMaster: selectedMaster);
+      },
+    ),
+
+    // StatefulShellRoute for Persistent Tabs
+    StatefulShellRoute.indexedStack(
+      builder: (context, state, navigationShell) {
+        return AppShell(navigationShell: navigationShell);
+      },
+      branches: [
+        // Branch 0: Catalog
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/catalog',
+              builder: (context, state) => const ServicesCatalogScreen(),
+            ),
+          ],
+        ),
+
+        // Branch 1: Masters list & Master detail
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/masters',
+              builder: (context, state) => const MasterListScreen(),
+              routes: [
+                GoRoute(
+                  path: ':id',
+                  builder: (context, state) {
+                    final id = state.pathParameters['id']!;
+                    final master = mockMasters.firstWhere(
+                      (m) => m.id == id,
+                      orElse: () => mockMasters.first,
+                    );
+                    return MasterDetailScreen(master: master);
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+
+        // Branch 2: Order history & Order detail
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/orders',
+              builder: (context, state) => const OrderHistoryScreen(),
+              routes: [
+                GoRoute(
+                  path: ':id',
+                  builder: (context, state) {
+                    final id = state.pathParameters['id']!;
+                    final order = mockOrders.firstWhere(
+                      (o) => o.id == id,
+                      orElse: () => mockOrders.first,
+                    );
+                    return OrderDetailScreen(order: order);
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+
+        // Branch 3: Favorites
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/favorites',
+              builder: (context, state) => const FavoritesScreen(),
+            ),
+          ],
+        ),
+
+        // Branch 4: Profile
+        StatefulShellBranch(
+          routes: [
+            GoRoute(
+              path: '/profile',
+              builder: (context, state) => const UserProfileScreen(),
+            ),
+          ],
+        ),
+      ],
+    ),
+  ],
+);
