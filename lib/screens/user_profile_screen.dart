@@ -1,9 +1,42 @@
 // lib/screens/user_profile_screen.dart
 import 'package:flutter/material.dart';
-import 'login_screen.dart';
+import 'package:go_router/go_router.dart';
 
 class UserProfileScreen extends StatelessWidget {
   const UserProfileScreen({super.key});
+
+  Future<void> _confirmLogout(BuildContext context) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Выйти из аккаунта?'),
+        content: const Text('Вы действительно хотите выйти из профиля?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx, false),
+            child: const Text('Отмена'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogCtx, true),
+            style: FilledButton.styleFrom(
+              backgroundColor: Colors.red,
+            ),
+            child: const Text('Да, выйти'),
+          ),
+        ],
+      ),
+    );
+
+    if (ok == true && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Вы вышли из аккаунта'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      context.go('/login');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -31,7 +64,7 @@ class UserProfileScreen extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(20),
                 side: BorderSide(
-                  color: colorScheme.outlineVariant.withOpacity(0.5),
+                  color: colorScheme.outlineVariant.withValues(alpha: 0.5),
                 ),
               ),
               child: Padding(
@@ -121,19 +154,16 @@ class UserProfileScreen extends StatelessWidget {
             ),
             const SizedBox(height: 20),
 
-            // Navigation button to Static Auth Screen
+            // Navigation button to Auth Screen
             SizedBox(
               width: double.infinity,
               height: 50,
               child: OutlinedButton.icon(
                 onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                  );
+                  context.go('/login');
                 },
                 icon: const Icon(Icons.lock_outline),
-                label: const Text('Перейти на экран входа (L2 Auth)'),
+                label: const Text('Перейти на экран входа'),
                 style: OutlinedButton.styleFrom(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -148,7 +178,7 @@ class UserProfileScreen extends StatelessWidget {
               width: double.infinity,
               height: 50,
               child: TextButton.icon(
-                onPressed: () {},
+                onPressed: () => _confirmLogout(context),
                 icon: const Icon(Icons.logout, color: Colors.red),
                 label: const Text(
                   'Выйти из аккаунта',
