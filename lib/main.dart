@@ -1,9 +1,34 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'data/repositories/mock_master_repository.dart';
+import 'data/repositories/mock_order_repository.dart';
+import 'models/masters_model.dart';
+import 'models/orders_model.dart';
 import 'router.dart';
 
 void main() {
-  runApp(const HomeServicesApp());
+  final masterRepository = MockMasterRepository();
+  final orderRepository = MockOrderRepository();
+
+  runApp(
+    MultiProvider(
+      providers: [
+        // Fault simulation repositories provided for profile switcher
+        Provider<MockMasterRepository>.value(value: masterRepository),
+        Provider<MockOrderRepository>.value(value: orderRepository),
+
+        // Domain models with DI & cascade .load()
+        ChangeNotifierProvider(
+          create: (_) => MastersModel(masterRepository)..load(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => OrdersModel(orderRepository)..load(),
+        ),
+      ],
+      child: const HomeServicesApp(),
+    ),
+  );
 }
 
 class HomeServicesApp extends StatelessWidget {

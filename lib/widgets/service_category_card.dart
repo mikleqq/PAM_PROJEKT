@@ -1,6 +1,6 @@
 // lib/widgets/service_category_card.dart
 import 'package:flutter/material.dart';
-import '../data/mock_data.dart';
+import '../data/models.dart';
 
 class ServiceCategoryCard extends StatelessWidget {
   final ServiceCategory category;

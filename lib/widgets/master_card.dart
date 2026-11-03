@@ -1,6 +1,6 @@
 // lib/widgets/master_card.dart
 import 'package:flutter/material.dart';
-import '../data/mock_data.dart';
+import '../data/models.dart';
 
 class MasterCard extends StatelessWidget {
   final Master master;
