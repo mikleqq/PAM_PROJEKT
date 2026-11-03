@@ -1,101 +1,9 @@
 // lib/data/mock_data.dart
-// Domain Models and Mock Data for Home Services App
+// Seed data used ONLY by Mock Repository implementations
 
-class ServiceCategory {
-  final String id;
-  final String name;
-  final String iconName;
-  final int masterCount;
-  final double startingPrice;
+import 'models.dart';
+export 'models.dart';
 
-  const ServiceCategory({
-    required this.id,
-    required this.name,
-    required this.iconName,
-    required this.masterCount,
-    required this.startingPrice,
-  });
-}
-
-class Master {
-  final String id;
-  final String name;
-  final String specialty;
-  final String categoryId;
-  final double rating;
-  final int reviewsCount;
-  final double hourlyRate; // in MDL
-  final int experienceYears;
-  final String bio;
-  final String phone;
-  final bool isAvailable;
-  final bool isVerified;
-  final List<String> skills;
-
-  const Master({
-    required this.id,
-    required this.name,
-    required this.specialty,
-    required this.categoryId,
-    required this.rating,
-    required this.reviewsCount,
-    required this.hourlyRate,
-    required this.experienceYears,
-    required this.bio,
-    required this.phone,
-    required this.isAvailable,
-    required this.isVerified,
-    required this.skills,
-  });
-}
-
-class ServiceOrder {
-  final String id;
-  final String serviceName;
-  final String description;
-  final String masterName;
-  final String masterSpecialty;
-  final String masterPhone;
-  final String date;
-  final String time;
-  final String address;
-  final double price; // in MDL
-  final String status; // "Завершён", "В процессе", "Ожидает", "Отменён"
-  final String paymentMethod;
-
-  const ServiceOrder({
-    required this.id,
-    required this.serviceName,
-    required this.description,
-    required this.masterName,
-    required this.masterSpecialty,
-    required this.masterPhone,
-    required this.date,
-    required this.time,
-    required this.address,
-    required this.price,
-    required this.status,
-    required this.paymentMethod,
-  });
-}
-
-class Review {
-  final String id;
-  final String userName;
-  final double rating;
-  final String date;
-  final String comment;
-
-  const Review({
-    required this.id,
-    required this.userName,
-    required this.rating,
-    required this.date,
-    required this.comment,
-  });
-}
-
-// Mock Data
 const mockCategories = [
   ServiceCategory(
     id: 'cat_plumbing',
@@ -170,6 +78,7 @@ const mockMasters = [
     isAvailable: true,
     isVerified: true,
     skills: ['Монтаж труб', 'Установка сантехники', 'Устранение засоров', 'Аварийный выезд'],
+    isFavorite: true,
   ),
   Master(
     id: 'm2',
@@ -185,6 +94,7 @@ const mockMasters = [
     isAvailable: true,
     isVerified: true,
     skills: ['Замена проводки', 'Монтаж щитков', 'Установка люстр', 'Диагностика коротких замыканий'],
+    isFavorite: true,
   ),
   Master(
     id: 'm3',
@@ -200,6 +110,7 @@ const mockMasters = [
     isAvailable: false,
     isVerified: true,
     skills: ['Крепление к стенам', 'Мелкий ремонт', 'Замена замков', 'Навеска ТВ'],
+    isFavorite: false,
   ),
   Master(
     id: 'm4',
@@ -215,6 +126,7 @@ const mockMasters = [
     isAvailable: true,
     isVerified: true,
     skills: ['Генеральная уборка', 'Мойка окон', 'Уборка после ремонта', 'Химчистка диванов'],
+    isFavorite: true,
   ),
   Master(
     id: 'm5',
@@ -230,6 +142,7 @@ const mockMasters = [
     isAvailable: true,
     isVerified: true,
     skills: ['Стиральные машины', 'Холодильники', 'Посудомойки', 'Замена ТЭНа'],
+    isFavorite: false,
   ),
   Master(
     id: 'm6',
@@ -245,6 +158,7 @@ const mockMasters = [
     isAvailable: true,
     isVerified: true,
     skills: ['Сборка кухонь', 'Шкафы-купе', 'Врезка моек', 'Регулировка фасадов'],
+    isFavorite: true,
   ),
   Master(
     id: 'm7',
@@ -260,6 +174,7 @@ const mockMasters = [
     isAvailable: false,
     isVerified: false,
     skills: ['Вскрытие замков', 'Замена личинок', 'Установка доводчиков', 'Ремонт дверей'],
+    isFavorite: false,
   ),
   Master(
     id: 'm8',
@@ -275,6 +190,7 @@ const mockMasters = [
     isAvailable: true,
     isVerified: true,
     skills: ['Поклейка обоев', 'Покраска стен', 'Шпатлевка', 'Гипсокартон'],
+    isFavorite: false,
   ),
 ];
 
