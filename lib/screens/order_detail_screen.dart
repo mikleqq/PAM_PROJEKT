@@ -1,21 +1,73 @@
 // lib/screens/order_detail_screen.dart
 import 'package:flutter/material.dart';
-import '../data/mock_data.dart';
+import 'package:provider/provider.dart';
+import '../data/models.dart';
+import '../models/orders_model.dart';
 import '../widgets/status_badge.dart';
 
 class OrderDetailScreen extends StatelessWidget {
-  final ServiceOrder order;
+  final String orderId;
 
-  const OrderDetailScreen({super.key, required this.order});
+  const OrderDetailScreen({super.key, required this.orderId});
+
+  Future<void> _confirmCancelOrder(BuildContext context, ServiceOrder currentOrder) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Отменить заказ?'),
+        content: const Text('Вы действительно хотите отменить этот заказ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx, false),
+            child: const Text('Нет'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(dialogCtx, true),
+            style: FilledButton.styleFrom(backgroundColor: Colors.red),
+            child: const Text('Да, отменить'),
+          ),
+        ],
+      ),
+    );
+
+    if (ok == true && context.mounted) {
+      final err = await context.read<OrdersModel>().cancelOrder(currentOrder.id);
+      if (err != null && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(err)),
+        );
+      } else if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Заказ успешно отменён'),
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final model = context.watch<OrdersModel>();
+    final currentOrder = model.byId(orderId);
+
+    if (currentOrder == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Детали заказа')),
+        body: Center(
+          child: model.isLoading
+              ? const CircularProgressIndicator()
+              : const Text('Заказ не найден'),
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Заказ № ${order.id}'),
+        title: Text('Заказ № ${currentOrder.id}'),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -45,7 +97,7 @@ class OrderDetailScreen extends StatelessWidget {
                             color: colorScheme.onSurfaceVariant,
                           ),
                         ),
-                        StatusBadge(status: order.status),
+                        StatusBadge(status: currentOrder.status),
                       ],
                     ),
                     const Divider(height: 24),
@@ -63,7 +115,7 @@ class OrderDetailScreen extends StatelessWidget {
                               ),
                             ),
                             Text(
-                              '${order.date}, ${order.time}',
+                              '${currentOrder.date}, ${currentOrder.time}',
                               style: theme.textTheme.titleSmall?.copyWith(
                                 fontWeight: FontWeight.bold,
                               ),
@@ -98,7 +150,7 @@ class OrderDetailScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      order.serviceName,
+                      currentOrder.serviceName,
                       style: theme.textTheme.titleMedium?.copyWith(
                         fontWeight: FontWeight.bold,
                         color: colorScheme.primary,
@@ -106,7 +158,7 @@ class OrderDetailScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      order.description,
+                      currentOrder.description,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         height: 1.4,
                       ),
@@ -139,7 +191,7 @@ class OrderDetailScreen extends StatelessWidget {
                       radius: 24,
                       backgroundColor: colorScheme.primaryContainer,
                       child: Text(
-                        order.masterName[0],
+                        currentOrder.masterName[0],
                         style: TextStyle(
                           color: colorScheme.onPrimaryContainer,
                           fontWeight: FontWeight.bold,
@@ -152,20 +204,20 @@ class OrderDetailScreen extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            order.masterName,
+                            currentOrder.masterName,
                             style: theme.textTheme.titleSmall?.copyWith(
                               fontWeight: FontWeight.bold,
                             ),
                           ),
                           Text(
-                            order.masterSpecialty,
+                            currentOrder.masterSpecialty,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: colorScheme.onSurfaceVariant,
                             ),
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            order.masterPhone,
+                            currentOrder.masterPhone,
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: colorScheme.primary,
                               fontWeight: FontWeight.w500,
@@ -178,7 +230,7 @@ class OrderDetailScreen extends StatelessWidget {
                       onPressed: () {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Звонок мастеру: ${order.masterPhone}'),
+                            content: Text('Звонок мастеру: ${currentOrder.masterPhone}'),
                           ),
                         );
                       },
@@ -212,7 +264,7 @@ class OrderDetailScreen extends StatelessWidget {
                     const SizedBox(width: 12),
                     Expanded(
                       child: Text(
-                        order.address,
+                        currentOrder.address,
                         style: theme.textTheme.bodyMedium,
                       ),
                     ),
@@ -248,7 +300,7 @@ class OrderDetailScreen extends StatelessWidget {
                           style: theme.textTheme.bodyMedium,
                         ),
                         Text(
-                          order.paymentMethod,
+                          currentOrder.paymentMethod,
                           style: theme.textTheme.bodyMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -266,7 +318,7 @@ class OrderDetailScreen extends StatelessWidget {
                           ),
                         ),
                         Text(
-                          '${order.price.toStringAsFixed(0)} MDL',
+                          '${currentOrder.price.toStringAsFixed(0)} MDL',
                           style: theme.textTheme.titleLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                             color: colorScheme.primary,
@@ -288,7 +340,7 @@ class OrderDetailScreen extends StatelessWidget {
             const SizedBox(height: 24),
 
             // Action Buttons based on status
-            if (order.status == 'Завершён') ...[
+            if (currentOrder.status == 'Завершён') ...[
               SizedBox(
                 width: double.infinity,
                 height: 50,
@@ -304,18 +356,12 @@ class OrderDetailScreen extends StatelessWidget {
                   label: const Text('Повторить заказ'),
                 ),
               ),
-            ] else if (order.status == 'В процессе' || order.status == 'Ожидает') ...[
+            ] else if (currentOrder.status == 'В процессе' || currentOrder.status == 'Ожидает') ...[
               SizedBox(
                 width: double.infinity,
                 height: 50,
                 child: OutlinedButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Запрос на отмену заказа отправлен'),
-                      ),
-                    );
-                  },
+                  onPressed: () => _confirmCancelOrder(context, currentOrder),
                   icon: const Icon(Icons.cancel_outlined, color: Colors.red),
                   label: const Text('Отменить заказ', style: TextStyle(color: Colors.red)),
                 ),

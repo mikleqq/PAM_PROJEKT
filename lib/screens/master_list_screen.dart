@@ -1,8 +1,10 @@
 // lib/screens/master_list_screen.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../data/mock_data.dart';
+import 'package:provider/provider.dart';
+import '../models/masters_model.dart';
 import '../widgets/master_card.dart';
+import '../widgets/error_view.dart';
 
 class MasterListScreen extends StatelessWidget {
   const MasterListScreen({super.key});
@@ -11,6 +13,7 @@ class MasterListScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final model = context.watch<MastersModel>();
 
     final categoriesFilter = [
       'Все мастера',
@@ -22,11 +25,19 @@ class MasterListScreen extends StatelessWidget {
       'Мастер на час',
     ];
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Поиск мастеров'),
-      ),
-      body: Column(
+    Widget bodyContent;
+
+    if (model.isLoading) {
+      bodyContent = const Center(child: CircularProgressIndicator());
+    } else if (model.error != null) {
+      bodyContent = ErrorView(
+        message: model.error!,
+        onRetry: () => context.read<MastersModel>().load(),
+      );
+    } else {
+      final masters = model.masters;
+
+      bodyContent = Column(
         children: [
           // Search Box
           Padding(
@@ -79,7 +90,7 @@ class MasterListScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Найдено мастеров: ${mockMasters.length}',
+                  'Найдено мастеров: ${masters.length}',
                   style: theme.textTheme.bodyMedium?.copyWith(
                     color: colorScheme.onSurfaceVariant,
                     fontWeight: FontWeight.w500,
@@ -98,11 +109,12 @@ class MasterListScreen extends StatelessWidget {
           Expanded(
             child: ListView.separated(
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              itemCount: mockMasters.length,
+              itemCount: masters.length,
               separatorBuilder: (_, __) => const SizedBox(height: 10),
               itemBuilder: (context, index) {
-                final master = mockMasters[index];
+                final master = masters[index];
                 return MasterCard(
+                  key: ValueKey(master.id),
                   master: master,
                   onTap: () {
                     context.push('/masters/${master.id}');
@@ -112,7 +124,14 @@ class MasterListScreen extends StatelessWidget {
             ),
           ),
         ],
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Поиск мастеров'),
       ),
+      body: bodyContent,
     );
   }
 }

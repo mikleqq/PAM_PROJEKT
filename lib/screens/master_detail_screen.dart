@@ -1,26 +1,62 @@
 // lib/screens/master_detail_screen.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../data/mock_data.dart';
+import 'package:provider/provider.dart';
+import '../data/models.dart';
+import '../models/masters_model.dart';
 import '../widgets/info_row.dart';
 
 class MasterDetailScreen extends StatelessWidget {
-  final Master master;
+  final String id;
 
-  const MasterDetailScreen({super.key, required this.master});
+  const MasterDetailScreen({super.key, required this.id});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final model = context.watch<MastersModel>();
+    final master = model.byId(id);
+
+    if (master == null) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Профиль мастера')),
+        body: Center(
+          child: model.isLoading
+              ? const CircularProgressIndicator()
+              : const Text('Мастер не найден'),
+        ),
+      );
+    }
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Профиль мастера'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.bookmark_border),
-            onPressed: () {},
+            icon: Icon(
+              master.isFavorite ? Icons.bookmark : Icons.bookmark_border,
+              color: master.isFavorite ? colorScheme.primary : null,
+            ),
+            onPressed: () async {
+              final err = await context.read<MastersModel>().toggleFavorite(master.id);
+              if (err != null && context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text(err)),
+                );
+              } else if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      master.isFavorite
+                          ? 'Удалено из избранного'
+                          : 'Добавлено в избранное',
+                    ),
+                    duration: const Duration(seconds: 1),
+                  ),
+                );
+              }
+            },
           ),
           IconButton(
             icon: const Icon(Icons.share_outlined),

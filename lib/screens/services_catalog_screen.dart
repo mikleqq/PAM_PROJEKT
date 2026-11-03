@@ -1,9 +1,11 @@
 // lib/screens/services_catalog_screen.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../data/mock_data.dart';
+import 'package:provider/provider.dart';
+import '../models/masters_model.dart';
 import '../widgets/service_category_card.dart';
 import '../widgets/master_card.dart';
+import '../widgets/error_view.dart';
 
 class ServicesCatalogScreen extends StatelessWidget {
   const ServicesCatalogScreen({super.key});
@@ -12,18 +14,22 @@ class ServicesCatalogScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final model = context.watch<MastersModel>();
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Каталог услуг'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {},
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
+    Widget bodyContent;
+
+    if (model.isLoading) {
+      bodyContent = const Center(child: CircularProgressIndicator());
+    } else if (model.error != null) {
+      bodyContent = ErrorView(
+        message: model.error!,
+        onRetry: () => context.read<MastersModel>().load(),
+      );
+    } else {
+      final categories = model.categories;
+      final topMasters = model.masters.take(3).toList();
+
+      bodyContent = SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,7 +67,7 @@ class ServicesCatalogScreen extends StatelessWidget {
                   onPressed: () {
                     context.go('/masters');
                   },
-                  child: const Text('Все (8)'),
+                  child: Text('Все (${categories.length})'),
                 ),
               ],
             ),
@@ -71,7 +77,7 @@ class ServicesCatalogScreen extends StatelessWidget {
             GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: mockCategories.length,
+              itemCount: categories.length,
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
                 childAspectRatio: 1.3,
@@ -80,7 +86,7 @@ class ServicesCatalogScreen extends StatelessWidget {
               ),
               itemBuilder: (context, index) {
                 return ServiceCategoryCard(
-                  category: mockCategories[index],
+                  category: categories[index],
                   onTap: () {
                     context.go('/masters');
                   },
@@ -113,10 +119,10 @@ class ServicesCatalogScreen extends StatelessWidget {
             ListView.separated(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              itemCount: 3,
+              itemCount: topMasters.length,
               separatorBuilder: (_, __) => const SizedBox(height: 8),
               itemBuilder: (context, index) {
-                final master = mockMasters[index];
+                final master = topMasters[index];
                 return MasterCard(
                   master: master,
                   onTap: () {
@@ -127,7 +133,20 @@ class ServicesCatalogScreen extends StatelessWidget {
             ),
           ],
         ),
+      );
+    }
+
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Каталог услуг'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.notifications_outlined),
+            onPressed: () {},
+          ),
+        ],
       ),
+      body: bodyContent,
     );
   }
 }

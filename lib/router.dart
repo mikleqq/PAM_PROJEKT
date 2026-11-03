@@ -1,6 +1,5 @@
 // lib/router.dart
 import 'package:go_router/go_router.dart';
-import 'data/mock_data.dart';
 import 'widgets/app_shell.dart';
 import 'screens/login_screen.dart';
 import 'screens/services_catalog_screen.dart';
@@ -15,7 +14,7 @@ import 'screens/create_order_screen.dart';
 final GoRouter router = GoRouter(
   initialLocation: '/login',
   routes: [
-    // Auth Route (Outside shell, no bottom nav bar)
+    // Auth Route
     GoRoute(
       path: '/login',
       builder: (context, state) => const LoginScreen(),
@@ -26,13 +25,7 @@ final GoRouter router = GoRouter(
       path: '/create-order',
       builder: (context, state) {
         final masterId = state.uri.queryParameters['masterId'];
-        Master? selectedMaster;
-        if (masterId != null) {
-          try {
-            selectedMaster = mockMasters.firstWhere((m) => m.id == masterId);
-          } catch (_) {}
-        }
-        return CreateOrderScreen(selectedMaster: selectedMaster);
+        return CreateOrderScreen(masterId: masterId);
       },
     ),
 
@@ -63,11 +56,7 @@ final GoRouter router = GoRouter(
                   path: ':id',
                   builder: (context, state) {
                     final id = state.pathParameters['id']!;
-                    final master = mockMasters.firstWhere(
-                      (m) => m.id == id,
-                      orElse: () => mockMasters.first,
-                    );
-                    return MasterDetailScreen(master: master);
+                    return MasterDetailScreen(masterId: id);
                   },
                 ),
               ],
@@ -86,11 +75,7 @@ final GoRouter router = GoRouter(
                   path: ':id',
                   builder: (context, state) {
                     final id = state.pathParameters['id']!;
-                    final order = mockOrders.firstWhere(
-                      (o) => o.id == id,
-                      orElse: () => mockOrders.first,
-                    );
-                    return OrderDetailScreen(order: order);
+                    return OrderDetailScreen(orderId: id);
                   },
                 ),
               ],

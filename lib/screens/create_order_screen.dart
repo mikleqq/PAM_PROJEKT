@@ -1,12 +1,15 @@
 // lib/screens/create_order_screen.dart
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../data/mock_data.dart';
+import 'package:provider/provider.dart';
+import '../data/models.dart';
+import '../models/masters_model.dart';
+import '../models/orders_model.dart';
 
 class CreateOrderScreen extends StatefulWidget {
-  final Master? selectedMaster;
+  final String? masterId;
 
-  const CreateOrderScreen({super.key, this.selectedMaster});
+  const CreateOrderScreen({super.key, this.masterId});
 
   @override
   State<CreateOrderScreen> createState() => _CreateOrderScreenState();
@@ -17,7 +20,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   final _descriptionController = TextEditingController();
   final _addressController = TextEditingController(text: 'г. Кишинев, ул. Штефан чел Маре 132');
   String _selectedPaymentMethod = 'cash';
-  String _selectedCategory = mockCategories.first.name;
+  String _selectedCategory = 'Сантехника';
 
   @override
   void dispose() {
@@ -26,8 +29,34 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     super.dispose();
   }
 
-  void _submitOrder() {
+  Future<void> _submitOrder(Master? selectedMaster) async {
     if (!_formKey.currentState!.validate()) return;
+
+    final draft = ServiceOrder(
+      id: '',
+      serviceName: _selectedCategory,
+      description: _descriptionController.text.trim(),
+      masterName: selectedMaster?.name ?? 'Выбранный мастер',
+      masterSpecialty: selectedMaster?.specialty ?? 'Специалист по ремонту',
+      masterPhone: selectedMaster?.phone ?? '+373 69 000 000',
+      date: '15 Октября 2026',
+      time: '14:00 - 16:00',
+      address: _addressController.text.trim(),
+      price: selectedMaster?.hourlyRate ?? 350.0,
+      status: 'Ожидает',
+      paymentMethod: _selectedPaymentMethod == 'cash' ? 'Наличными мастеру' : 'Картой мастеру',
+    );
+
+    final error = await context.read<OrdersModel>().createOrder(draft);
+
+    if (!mounted) return;
+
+    if (error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error)),
+      );
+      return;
+    }
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
@@ -47,6 +76,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final mastersModel = context.watch<MastersModel>();
+    final categories = mastersModel.categories;
+    final selectedMaster = widget.masterId != null ? mastersModel.byId(widget.masterId!) : null;
 
     return Scaffold(
       appBar: AppBar(
@@ -60,7 +92,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Selected Master Header
-              if (widget.selectedMaster != null) ...[
+              if (selectedMaster != null) ...[
                 Card(
                   color: colorScheme.primaryContainer.withValues(alpha: 0.4),
                   elevation: 0,
@@ -75,7 +107,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                           radius: 20,
                           backgroundColor: colorScheme.primary,
                           child: Text(
-                            widget.selectedMaster!.name[0],
+                            selectedMaster.name[0],
                             style: TextStyle(color: colorScheme.onPrimary),
                           ),
                         ),
@@ -85,13 +117,13 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Выбранный мастер: ${widget.selectedMaster!.name}',
+                                'Выбранный мастер: ${selectedMaster.name}',
                                 style: theme.textTheme.titleSmall?.copyWith(
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                               Text(
-                                '${widget.selectedMaster!.specialty} • ${widget.selectedMaster!.hourlyRate.toStringAsFixed(0)} MDL/ч',
+                                '${selectedMaster.specialty} • ${selectedMaster.hourlyRate.toStringAsFixed(0)} MDL/ч',
                                 style: theme.textTheme.bodySmall,
                               ),
                             ],
@@ -114,7 +146,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
               // Service Type Dropdown Form Layout
               DropdownButtonFormField<String>(
-                value: _selectedCategory,
+                value: categories.any((c) => c.name == _selectedCategory)
+                    ? _selectedCategory
+                    : (categories.isNotEmpty ? categories.first.name : 'Сантехника'),
                 decoration: InputDecoration(
                   labelText: 'Категория услуги',
                   prefixIcon: const Icon(Icons.category_outlined),
@@ -122,7 +156,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
-                items: mockCategories.map((cat) {
+                items: categories.map((cat) {
                   return DropdownMenuItem<String>(
                     value: cat.name,
                     child: Text(cat.name),
@@ -308,7 +342,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                         children: [
                           Text('Ориентировочная стоимость:', style: theme.textTheme.bodyMedium),
                           Text(
-                            '${widget.selectedMaster?.hourlyRate.toStringAsFixed(0) ?? "350"} MDL',
+                            '${selectedMaster?.hourlyRate.toStringAsFixed(0) ?? "350"} MDL',
                             style: theme.textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: colorScheme.primary,
@@ -334,7 +368,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                 width: double.infinity,
                 height: 52,
                 child: FilledButton(
-                  onPressed: _submitOrder,
+                  onPressed: () => _submitOrder(selectedMaster),
                   style: FilledButton.styleFrom(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
