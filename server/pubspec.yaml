@@ -1,0 +1,10 @@
+name: home_services_server
+description: "REST API Backend server for Home Services App (L5)"
+version: 1.0.0
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  shelf: ^1.4.0
+  shelf_router: ^1.1.4
