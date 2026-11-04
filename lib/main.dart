@@ -1,24 +1,43 @@
 // lib/main.dart
+// Composition Root switching Mock Repositories to HTTP REST Backend Repositories (L5)
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'data/repositories/mock_master_repository.dart';
-import 'data/repositories/mock_order_repository.dart';
+import 'data/auth_api.dart';
+import 'data/repositories/http_master_repository.dart';
+import 'data/repositories/http_order_repository.dart';
+import 'data/token_store.dart';
 import 'models/masters_model.dart';
 import 'models/orders_model.dart';
 import 'router.dart';
 
-void main() {
-  final masterRepository = MockMasterRepository();
-  final orderRepository = MockOrderRepository();
+// Base URL for Android Emulator (10.0.2.2) or Desktop / Localhost (http://localhost:8080)
+const String apiBase = 'http://10.0.2.2:8080';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  final tokens = TokenStore();
+  final loggedIn = await tokens.read() != null;
+
+  initRouter(initialLocation: loggedIn ? '/catalog' : '/login');
+
+  final masterRepository = HttpMasterRepository(
+    apiBase,
+    tokens,
+    onUnauthorized: () => router.go('/login'),
+  );
+
+  final orderRepository = HttpOrderRepository(
+    apiBase,
+    tokens,
+    onUnauthorized: () => router.go('/login'),
+  );
 
   runApp(
     MultiProvider(
       providers: [
-        // Fault simulation repositories provided for profile switcher
-        Provider<MockMasterRepository>.value(value: masterRepository),
-        Provider<MockOrderRepository>.value(value: orderRepository),
-
-        // Domain models with DI & cascade .load()
+        Provider<AuthApi>(create: (_) => AuthApi(apiBase, tokens)),
         ChangeNotifierProvider(
           create: (_) => MastersModel(masterRepository)..load(),
         ),

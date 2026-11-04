@@ -1,5 +1,5 @@
 // lib/models/masters_model.dart
-// Shared state for Masters and Categories list with loading/data/error triad
+// Shared state for Masters and Categories list with search & pagination (L5)
 
 import 'package:flutter/foundation.dart';
 import '../data/models.dart';
@@ -15,6 +15,10 @@ class MastersModel extends ChangeNotifier {
   String? _error;
   List<Master> _masters = const [];
   List<ServiceCategory> _categories = const [];
+  String _search = '';
+  int _page = 1;
+  final int _limit = 20;
+  bool _hasMore = false;
 
   bool get isLoading => _loading;
   String? get error => _error;
@@ -23,6 +27,8 @@ class MastersModel extends ChangeNotifier {
   List<ServiceCategory> get categories => List.unmodifiable(_categories);
   int get count => _masters.length;
   int get favoritesCount => favorites.length;
+  bool get hasMore => _hasMore;
+  String get search => _search;
 
   Master? byId(String id) {
     try {
@@ -32,17 +38,20 @@ class MastersModel extends ChangeNotifier {
     }
   }
 
-  Future<void> load() async {
+  Future<void> load({String? search}) async {
+    _search = search ?? _search;
+    _page = 1;
     _loading = true;
     _error = null;
     notifyListeners();
 
-    final mastersResult = await _repository.fetchAll();
+    final mastersResult = await _repository.fetchAll(page: _page, limit: _limit, search: _search);
     final categoriesResult = await _repository.fetchCategories();
 
     switch (mastersResult) {
       case Ok(:final value):
         _masters = value;
+        _hasMore = value.length >= _limit;
       case Err(:final msg):
         _error = msg;
     }

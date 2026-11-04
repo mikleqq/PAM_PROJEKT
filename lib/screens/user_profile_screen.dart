@@ -2,17 +2,11 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../data/repositories/mock_master_repository.dart';
-import '../data/repositories/mock_order_repository.dart';
+import '../data/auth_api.dart';
 
-class UserProfileScreen extends StatefulWidget {
+class UserProfileScreen extends StatelessWidget {
   const UserProfileScreen({super.key});
 
-  @override
-  State<UserProfileScreen> createState() => _UserProfileScreenState();
-}
-
-class _UserProfileScreenState extends State<UserProfileScreen> {
   Future<void> _confirmLogout(BuildContext context) async {
     final ok = await showDialog<bool>(
       context: context,
@@ -36,6 +30,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     );
 
     if (ok == true && context.mounted) {
+      await context.read<AuthApi>().logout();
+      if (!context.mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Вы вышли из аккаунта'),
@@ -50,9 +47,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final masterRepo = context.watch<MockMasterRepository>();
-    final orderRepo = context.watch<MockOrderRepository>();
-    final isErrorSimulated = masterRepo.simulateError || orderRepo.simulateError;
 
     return Scaffold(
       appBar: AppBar(
@@ -122,49 +116,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                     ),
                   ],
                 ),
-              ),
-            ),
-            const SizedBox(height: 20),
-
-            // Fault Simulation Section (Task 7.2)
-            Card(
-              elevation: 0,
-              color: isErrorSimulated
-                  ? colorScheme.errorContainer.withValues(alpha: 0.3)
-                  : colorScheme.surfaceContainerLow,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(
-                  color: isErrorSimulated
-                      ? colorScheme.error
-                      : colorScheme.outlineVariant.withValues(alpha: 0.5),
-                ),
-              ),
-              child: SwitchListTile(
-                secondary: Icon(
-                  Icons.bug_report_outlined,
-                  color: isErrorSimulated ? colorScheme.error : colorScheme.primary,
-                ),
-                title: const Text(
-                  'Симулировать сбой сети',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle: const Text('Принудительно вызывает ошибки сервера для проверки экрана ErrorView'),
-                value: isErrorSimulated,
-                onChanged: (val) {
-                  setState(() {
-                    masterRepo.simulateError = val;
-                    orderRepo.simulateError = val;
-                  });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        val ? 'Авария сети включена!' : 'Авария сети отключена',
-                      ),
-                      duration: const Duration(seconds: 1),
-                    ),
-                  );
-                },
               ),
             ),
             const SizedBox(height: 20),
