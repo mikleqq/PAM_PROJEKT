@@ -2,21 +2,21 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../data/models.dart';
-import '../models/masters_model.dart';
-import '../widgets/info_row.dart';
+import 'package:home_services/data/models.dart';
+import 'package:home_services/models/masters_model.dart';
+import 'package:home_services/widgets/info_row.dart';
 
 class MasterDetailScreen extends StatelessWidget {
-  final String id;
+  final String masterId;
 
-  const MasterDetailScreen({super.key, required this.id});
+  const MasterDetailScreen({super.key, required this.masterId});
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final model = context.watch<MastersModel>();
-    final master = model.byId(id);
+    final master = model.byId(masterId);
 
     if (master == null) {
       return Scaffold(

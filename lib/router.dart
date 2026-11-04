@@ -1,15 +1,15 @@
 // lib/router.dart
 import 'package:go_router/go_router.dart';
-import 'widgets/app_shell.dart';
-import 'screens/login_screen.dart';
-import 'screens/services_catalog_screen.dart';
-import 'screens/master_list_screen.dart';
-import 'screens/master_detail_screen.dart';
-import 'screens/order_history_screen.dart';
-import 'screens/order_detail_screen.dart';
-import 'screens/favorites_screen.dart';
-import 'screens/user_profile_screen.dart';
-import 'screens/create_order_screen.dart';
+import 'package:home_services/widgets/app_shell.dart';
+import 'package:home_services/screens/login_screen.dart';
+import 'package:home_services/screens/services_catalog_screen.dart';
+import 'package:home_services/screens/master_list_screen.dart';
+import 'package:home_services/screens/master_detail_screen.dart';
+import 'package:home_services/screens/order_history_screen.dart';
+import 'package:home_services/screens/order_detail_screen.dart';
+import 'package:home_services/screens/favorites_screen.dart';
+import 'package:home_services/screens/user_profile_screen.dart';
+import 'package:home_services/screens/create_order_screen.dart';
 
 final GoRouter router = GoRouter(
   initialLocation: '/login',
