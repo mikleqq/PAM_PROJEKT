@@ -1,5 +1,5 @@
 // lib/data/models.dart
-// Domain Models for Home Services App
+// Domain Models for Home Services App with JSON Serialization (L5)
 
 class ServiceCategory {
   final String id;
@@ -15,6 +15,22 @@ class ServiceCategory {
     required this.masterCount,
     required this.startingPrice,
   });
+
+  factory ServiceCategory.fromJson(Map<String, dynamic> j) => ServiceCategory(
+        id: j['id'] as String? ?? '',
+        name: j['name'] as String? ?? '',
+        iconName: j['iconName'] as String? ?? '',
+        masterCount: j['masterCount'] as int? ?? 0,
+        startingPrice: (j['startingPrice'] as num?)?.toDouble() ?? 0.0,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'iconName': iconName,
+        'masterCount': masterCount,
+        'startingPrice': startingPrice,
+      };
 }
 
 class Master {
@@ -49,6 +65,40 @@ class Master {
     required this.skills,
     this.isFavorite = false,
   });
+
+  factory Master.fromJson(Map<String, dynamic> j) => Master(
+        id: j['id'] as String? ?? '',
+        name: j['name'] as String? ?? '',
+        specialty: j['specialty'] as String? ?? '',
+        categoryId: j['categoryId'] as String? ?? '',
+        rating: (j['rating'] as num?)?.toDouble() ?? 0.0,
+        reviewsCount: j['reviewsCount'] as int? ?? 0,
+        hourlyRate: (j['hourlyRate'] as num?)?.toDouble() ?? 0.0,
+        experienceYears: j['experienceYears'] as int? ?? 0,
+        bio: j['bio'] as String? ?? '',
+        phone: j['phone'] as String? ?? '',
+        isAvailable: j['isAvailable'] as bool? ?? true,
+        isVerified: j['isVerified'] as bool? ?? false,
+        skills: (j['skills'] as List?)?.map((e) => e.toString()).toList() ?? const [],
+        isFavorite: j['isFavorite'] as bool? ?? false,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'name': name,
+        'specialty': specialty,
+        'categoryId': categoryId,
+        'rating': rating,
+        'reviewsCount': reviewsCount,
+        'hourlyRate': hourlyRate,
+        'experienceYears': experienceYears,
+        'bio': bio,
+        'phone': phone,
+        'isAvailable': isAvailable,
+        'isVerified': isVerified,
+        'skills': skills,
+        'isFavorite': isFavorite,
+      };
 
   Master copyWith({
     String? id,
@@ -113,6 +163,36 @@ class ServiceOrder {
     required this.status,
     required this.paymentMethod,
   });
+
+  factory ServiceOrder.fromJson(Map<String, dynamic> j) => ServiceOrder(
+        id: j['id'] as String? ?? '',
+        serviceName: j['serviceName'] as String? ?? '',
+        description: j['description'] as String? ?? '',
+        masterName: j['masterName'] as String? ?? '',
+        masterSpecialty: j['masterSpecialty'] as String? ?? '',
+        masterPhone: j['masterPhone'] as String? ?? '',
+        date: j['date'] as String? ?? '',
+        time: j['time'] as String? ?? '',
+        address: j['address'] as String? ?? '',
+        price: (j['price'] as num?)?.toDouble() ?? 0.0,
+        status: j['status'] as String? ?? 'Ожидает',
+        paymentMethod: j['paymentMethod'] as String? ?? 'Наличными',
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'serviceName': serviceName,
+        'description': description,
+        'masterName': masterName,
+        'masterSpecialty': masterSpecialty,
+        'masterPhone': masterPhone,
+        'date': date,
+        'time': time,
+        'address': address,
+        'price': price,
+        'status': status,
+        'paymentMethod': paymentMethod,
+      };
 
   ServiceOrder copyWith({
     String? id,
