@@ -80,9 +80,9 @@ class ServicesCatalogScreen extends StatelessWidget {
               itemCount: categories.length,
               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 2,
-                childAspectRatio: 1.3,
                 crossAxisSpacing: 12,
                 mainAxisSpacing: 12,
+                mainAxisExtent: 130,
               ),
               itemBuilder: (context, index) {
                 return ServiceCategoryCard(
