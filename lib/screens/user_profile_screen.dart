@@ -4,8 +4,45 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../data/auth_api.dart';
 
-class UserProfileScreen extends StatelessWidget {
+class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
+
+  @override
+  State<UserProfileScreen> createState() => _UserProfileScreenState();
+}
+
+class _UserProfileScreenState extends State<UserProfileScreen> {
+  String _name = '';
+  String _email = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUser();
+  }
+
+  Future<void> _loadUser() async {
+    final auth = context.read<AuthApi>();
+    final name = await auth.tokens.readName() ?? '';
+    final email = await auth.tokens.readEmail() ?? '';
+    if (!mounted) return;
+    setState(() {
+      _name = name;
+      _email = email;
+    });
+  }
+
+  String get _initials {
+    final trimmed = _name.trim();
+    if (trimmed.isEmpty) return '?';
+    final parts = trimmed.split(RegExp(r'\s+'));
+    if (parts.length >= 2) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    } else if (parts.isNotEmpty && parts[0].isNotEmpty) {
+      return parts[0][0].toUpperCase();
+    }
+    return '?';
+  }
 
   Future<void> _confirmLogout(BuildContext context) async {
     final ok = await showDialog<bool>(
@@ -80,7 +117,7 @@ class UserProfileScreen extends StatelessWidget {
                       radius: 40,
                       backgroundColor: colorScheme.primaryContainer,
                       child: Text(
-                        'АК',
+                        _initials,
                         style: theme.textTheme.headlineMedium?.copyWith(
                           color: colorScheme.onPrimaryContainer,
                           fontWeight: FontWeight.bold,
@@ -89,21 +126,14 @@ class UserProfileScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Александр Коваленко',
+                      _name.isNotEmpty ? _name : 'Пользователь',
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'alex.kovalenko@example.com',
-                      style: theme.textTheme.bodyMedium?.copyWith(
-                        color: colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '+373 69 987 654',
+                      _email,
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: colorScheme.onSurfaceVariant,
                       ),
@@ -132,7 +162,7 @@ class UserProfileScreen extends StatelessWidget {
                   ListTile(
                     leading: Icon(Icons.location_on_outlined, color: colorScheme.primary),
                     title: const Text('Мои адреса'),
-                    subtitle: const Text('г. Кишинев, ул. Штефан чел Маре 132'),
+                    subtitle: const Text('Адрес не указан'),
                     trailing: const Icon(Icons.chevron_right),
                     onTap: () {},
                   ),

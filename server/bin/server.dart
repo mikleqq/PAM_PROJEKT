@@ -104,7 +104,7 @@ final List<Map<String, dynamic>> mastersDb = [
     'specialty': 'Мастер по сборке корпусной мебели',
     'categoryId': 'cat_furniture',
     'rating': 4.9,
-    'reviewsCount:': 41,
+    'reviewsCount': 41,
     'hourlyRate': 280.0,
     'experienceYears': 7,
     'bio': 'Сборка кухонь, шкафов-купе, кроватей любых брендов.',
