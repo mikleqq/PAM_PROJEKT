@@ -14,6 +14,7 @@ class UserProfileScreen extends StatefulWidget {
 class _UserProfileScreenState extends State<UserProfileScreen> {
   String _name = '';
   String _email = '';
+  List<String> _addresses = ['г. Кишинев, ул. Штефан чел Маре 132'];
 
   @override
   void initState() {
@@ -42,6 +43,239 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
       return parts[0][0].toUpperCase();
     }
     return '?';
+  }
+
+  void _showSettingsSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Настройки приложения',
+                    style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const ListTile(
+                leading: Icon(Icons.language_outlined),
+                title: Text('Язык приложения'),
+                subtitle: Text('Русский (Moldova)'),
+              ),
+              const Divider(height: 1),
+              const ListTile(
+                leading: Icon(Icons.dark_mode_outlined),
+                title: Text('Тема оформления'),
+                subtitle: Text('Светлая Material 3'),
+              ),
+              const Divider(height: 1),
+              const ListTile(
+                leading: Icon(Icons.info_outline),
+                title: Text('Версия приложения'),
+                subtitle: Text('ПрофиСервис v1.0.0 (L5 Build 2026)'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showEditProfileDialog(BuildContext context) {
+    final nameCtrl = TextEditingController(text: _name);
+    final formKey = GlobalKey<FormState>();
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        title: const Text('Редактировать профиль'),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: nameCtrl,
+            decoration: const InputDecoration(
+              labelText: 'Имя и фамилия',
+              prefixIcon: Icon(Icons.person_outline),
+            ),
+            validator: (val) =>
+                (val == null || val.trim().isEmpty) ? 'Введите ваше имя' : null,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: const Text('Отмена'),
+          ),
+          FilledButton(
+            onPressed: () async {
+              if (!formKey.currentState!.validate()) return;
+              final newName = nameCtrl.text.trim();
+              final auth = context.read<AuthApi>();
+              await auth.tokens.saveUser(newName, _email);
+              if (!mounted) return;
+              setState(() {
+                _name = newName;
+              });
+              if (dialogCtx.mounted) {
+                Navigator.pop(dialogCtx);
+              }
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Профиль успешно обновлён!')),
+                );
+              }
+            },
+            child: const Text('Сохранить'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddressesSheet(BuildContext context) {
+    final addressCtrl = TextEditingController();
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20.0,
+                right: 20.0,
+                top: 20.0,
+                bottom: MediaQuery.of(ctx).viewInsets.bottom + 20.0,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Мои адреса',
+                        style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(ctx),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  if (_addresses.isEmpty)
+                    const Text('У вас пока нет сохранённых адресов')
+                  else
+                    ..._addresses.map(
+                      (addr) => ListTile(
+                        leading: const Icon(Icons.location_on, color: Colors.blue),
+                        title: Text(addr),
+                        trailing: IconButton(
+                          icon: const Icon(Icons.delete_outline, color: Colors.red),
+                          onPressed: () {
+                            setModalState(() {
+                              _addresses.remove(addr);
+                            });
+                            setState(() {});
+                          },
+                        ),
+                      ),
+                    ),
+                  const Divider(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextField(
+                          controller: addressCtrl,
+                          decoration: const InputDecoration(
+                            hintText: 'Новый адрес (ул., дом...)',
+                            prefixIcon: Icon(Icons.add_location_alt_outlined),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      IconButton.filled(
+                        onPressed: () {
+                          if (addressCtrl.text.trim().isNotEmpty) {
+                            setModalState(() {
+                              _addresses.add(addressCtrl.text.trim());
+                            });
+                            setState(() {});
+                            addressCtrl.clear();
+                          }
+                        },
+                        icon: const Icon(Icons.add),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _showSupportChatDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Row(
+          children: [
+            Icon(Icons.support_agent, color: Colors.blue),
+            SizedBox(width: 8),
+            Text('Служба поддержки 24/7'),
+          ],
+        ),
+        content: const Text(
+          'Оператор поддержки онлайн. Задайте любой вопрос по поводу поиска мастеров, заказов или качества услуг.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Закрыть'),
+          ),
+          FilledButton.icon(
+            onPressed: () {
+              Navigator.pop(ctx);
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Соединение с оператором установлено (Чат открыт)'),
+                ),
+              );
+            },
+            icon: const Icon(Icons.chat),
+            label: const Text('Начать чат'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _confirmLogout(BuildContext context) async {
@@ -91,7 +325,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.settings_outlined),
-            onPressed: () {},
+            onPressed: () => _showSettingsSheet(context),
           ),
         ],
       ),
@@ -140,7 +374,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                     ),
                     const SizedBox(height: 12),
                     OutlinedButton.icon(
-                      onPressed: () {},
+                      onPressed: () => _showEditProfileDialog(context),
                       icon: const Icon(Icons.edit_outlined, size: 18),
                       label: const Text('Редактировать профиль'),
                     ),
@@ -162,9 +396,11 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                   ListTile(
                     leading: Icon(Icons.location_on_outlined, color: colorScheme.primary),
                     title: const Text('Мои адреса'),
-                    subtitle: const Text('Адрес не указан'),
+                    subtitle: Text(
+                      _addresses.isNotEmpty ? _addresses.first : 'Адрес не указан',
+                    ),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: () {},
+                    onTap: () => _showAddressesSheet(context),
                   ),
                   const Divider(height: 1),
                   ListTile(
@@ -173,7 +409,16 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                     subtitle: const Text('Пуш-уведомления и SMS'),
                     trailing: Switch(
                       value: true,
-                      onChanged: (val) {},
+                      onChanged: (val) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              val ? 'Уведомления включены' : 'Уведомления отключены',
+                            ),
+                            duration: const Duration(seconds: 1),
+                          ),
+                        );
+                      },
                     ),
                   ),
                   const Divider(height: 1),
@@ -182,7 +427,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                     title: const Text('Служба поддержки'),
                     subtitle: const Text('Чат с оператором 24/7'),
                     trailing: const Icon(Icons.chevron_right),
-                    onTap: () {},
+                    onTap: () => _showSupportChatDialog(context),
                   ),
                 ],
               ),

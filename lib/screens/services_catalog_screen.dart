@@ -7,8 +7,123 @@ import '../widgets/service_category_card.dart';
 import '../widgets/master_card.dart';
 import '../widgets/error_view.dart';
 
-class ServicesCatalogScreen extends StatelessWidget {
+class ServicesCatalogScreen extends StatefulWidget {
   const ServicesCatalogScreen({super.key});
+
+  @override
+  State<ServicesCatalogScreen> createState() => _ServicesCatalogScreenState();
+}
+
+class _ServicesCatalogScreenState extends State<ServicesCatalogScreen> {
+  final _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _showNotificationsSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Уведомления',
+                    style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              const ListTile(
+                leading: Icon(Icons.check_circle_outline, color: Colors.green),
+                title: Text('Заказ ORD-2026-002 принят'),
+                subtitle: Text('Мастер Иван Петров подтвердил время визита.'),
+              ),
+              const Divider(height: 1),
+              const ListTile(
+                leading: Icon(Icons.local_offer_outlined, color: Colors.blue),
+                title: Text('Скидка на бытовые услуги'),
+                subtitle: Text('Доступны новые проверенные специалисты по клинингу.'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  void _showFilterSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Фильтры и сортировка',
+                    style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(ctx),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                leading: const Icon(Icons.star_outline),
+                title: const Text('Сначала с высоким рейтингом'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  context.read<MastersModel>().load();
+                  context.go('/masters');
+                },
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.verified_user_outlined),
+                title: const Text('Только проверенные мастера'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  context.read<MastersModel>().load();
+                  context.go('/masters');
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,12 +151,24 @@ class ServicesCatalogScreen extends StatelessWidget {
           children: [
             // Search Bar
             TextField(
+              controller: _searchController,
+              textInputAction: TextInputAction.search,
+              onSubmitted: (query) {
+                context.read<MastersModel>().load(search: query);
+                context.go('/masters');
+              },
               decoration: InputDecoration(
                 hintText: 'Поиск услуги или мастера...',
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: IconButton(
+                  icon: const Icon(Icons.search),
+                  onPressed: () {
+                    context.read<MastersModel>().load(search: _searchController.text.trim());
+                    context.go('/masters');
+                  },
+                ),
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.tune),
-                  onPressed: () {},
+                  onPressed: () => _showFilterSheet(context),
                 ),
                 filled: true,
                 fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
@@ -65,6 +192,7 @@ class ServicesCatalogScreen extends StatelessWidget {
                 ),
                 TextButton(
                   onPressed: () {
+                    context.read<MastersModel>().load(search: '');
                     context.go('/masters');
                   },
                   child: Text('Все (${categories.length})'),
@@ -85,9 +213,11 @@ class ServicesCatalogScreen extends StatelessWidget {
                 mainAxisExtent: 130,
               ),
               itemBuilder: (context, index) {
+                final category = categories[index];
                 return ServiceCategoryCard(
-                  category: categories[index],
+                  category: category,
                   onTap: () {
+                    context.read<MastersModel>().load(search: category.name);
                     context.go('/masters');
                   },
                 );
@@ -107,6 +237,7 @@ class ServicesCatalogScreen extends StatelessWidget {
                 ),
                 TextButton(
                   onPressed: () {
+                    context.read<MastersModel>().load(search: '');
                     context.go('/masters');
                   },
                   child: const Text('Показать всех'),
@@ -142,7 +273,7 @@ class ServicesCatalogScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
-            onPressed: () {},
+            onPressed: () => _showNotificationsSheet(context),
           ),
         ],
       ),

@@ -6,24 +6,94 @@ import '../models/masters_model.dart';
 import '../widgets/master_card.dart';
 import '../widgets/error_view.dart';
 
-class MasterListScreen extends StatelessWidget {
+class MasterListScreen extends StatefulWidget {
   const MasterListScreen({super.key});
+
+  @override
+  State<MasterListScreen> createState() => _MasterListScreenState();
+}
+
+class _MasterListScreenState extends State<MasterListScreen> {
+  final _searchController = TextEditingController();
+  int _selectedCategoryIndex = 0;
+
+  final categoriesFilter = [
+    'Все мастера',
+    'Сантехника',
+    'Электрика',
+    'Клининг',
+    'Бытовая техника',
+    'Сборка мебели',
+    'Мастер на час',
+  ];
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  void _showSortOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Сортировка специалистов',
+                style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 12),
+              ListTile(
+                leading: const Icon(Icons.star, color: Colors.amber),
+                title: const Text('По рейтингу (сначала высокий)'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  context.read<MastersModel>().load(search: _searchController.text.trim());
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Отсортировано по рейтингу'),
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                },
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.payments_outlined),
+                title: const Text('По стоимости за час'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  context.read<MastersModel>().load(search: _searchController.text.trim());
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Отсортировано по стоимости'),
+                      duration: Duration(seconds: 1),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
     final model = context.watch<MastersModel>();
-
-    final categoriesFilter = [
-      'Все мастера',
-      'Сантехника',
-      'Электрика',
-      'Клининг',
-      'Бытовая техника',
-      'Сборка мебели',
-      'Мастер на час',
-    ];
 
     Widget bodyContent;
 
@@ -43,9 +113,28 @@ class MasterListScreen extends StatelessWidget {
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: TextField(
+              controller: _searchController,
+              textInputAction: TextInputAction.search,
+              onSubmitted: (query) {
+                context.read<MastersModel>().load(search: query);
+              },
               decoration: InputDecoration(
                 hintText: 'Поиск по имени, услуге или навыку...',
-                prefixIcon: const Icon(Icons.search),
+                prefixIcon: IconButton(
+                  icon: const Icon(Icons.search),
+                  onPressed: () {
+                    context.read<MastersModel>().load(search: _searchController.text.trim());
+                  },
+                ),
+                suffixIcon: _searchController.text.isNotEmpty
+                    ? IconButton(
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          context.read<MastersModel>().load(search: '');
+                        },
+                      )
+                    : null,
                 filled: true,
                 fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
                 border: OutlineInputBorder(
@@ -65,11 +154,18 @@ class MasterListScreen extends StatelessWidget {
               itemCount: categoriesFilter.length,
               separatorBuilder: (_, __) => const SizedBox(width: 8),
               itemBuilder: (context, index) {
-                final isSelected = index == 0;
+                final isSelected = index == _selectedCategoryIndex;
+                final filterText = categoriesFilter[index];
                 return FilterChip(
-                  label: Text(categoriesFilter[index]),
+                  label: Text(filterText),
                   selected: isSelected,
-                  onSelected: (selected) {},
+                  onSelected: (selected) {
+                    setState(() {
+                      _selectedCategoryIndex = index;
+                    });
+                    final searchParam = index == 0 ? '' : filterText;
+                    context.read<MastersModel>().load(search: searchParam);
+                  },
                   selectedColor: colorScheme.primaryContainer,
                   labelStyle: TextStyle(
                     color: isSelected
@@ -97,7 +193,7 @@ class MasterListScreen extends StatelessWidget {
                   ),
                 ),
                 TextButton.icon(
-                  onPressed: () {},
+                  onPressed: () => _showSortOptions(context),
                   icon: const Icon(Icons.swap_vert, size: 18),
                   label: const Text('По рейтингу'),
                 ),
@@ -107,21 +203,23 @@ class MasterListScreen extends StatelessWidget {
 
           // ListView of Masters
           Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              itemCount: masters.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 10),
-              itemBuilder: (context, index) {
-                final master = masters[index];
-                return MasterCard(
-                  key: ValueKey(master.id),
-                  master: master,
-                  onTap: () {
-                    context.push('/masters/${master.id}');
-                  },
-                );
-              },
-            ),
+            child: masters.isEmpty
+                ? const Center(child: Text('Мастера по вашему запросу не найдены'))
+                : ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    itemCount: masters.length,
+                    separatorBuilder: (_, __) => const SizedBox(height: 10),
+                    itemBuilder: (context, index) {
+                      final master = masters[index];
+                      return MasterCard(
+                        key: ValueKey(master.id),
+                        master: master,
+                        onTap: () {
+                          context.push('/masters/${master.id}');
+                        },
+                      );
+                    },
+                  ),
           ),
         ],
       );

@@ -21,12 +21,90 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   final _addressController = TextEditingController(text: 'г. Кишинев, ул. Штефан чел Маре 132');
   String _selectedPaymentMethod = 'cash';
   String _selectedCategory = 'Сантехника';
+  String _selectedDateText = '15 Октября 2026';
+  String _selectedTimeText = '14:00 - 16:00';
 
   @override
   void dispose() {
     _descriptionController.dispose();
     _addressController.dispose();
     super.dispose();
+  }
+
+  Future<void> _selectDate(BuildContext context) async {
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime(2026, 10, 15),
+      firstDate: DateTime(2026, 1, 1),
+      lastDate: DateTime(2027, 12, 31),
+    );
+
+    if (pickedDate != null) {
+      final months = [
+        'Января', 'Февраля', 'Марта', 'Апреля', 'Мая', 'Июня',
+        'Июля', 'Августа', 'Сентября', 'Октября', 'Ноября', 'Декабря'
+      ];
+      setState(() {
+        _selectedDateText = '${pickedDate.day} ${months[pickedDate.month - 1]} ${pickedDate.year}';
+      });
+    }
+  }
+
+  void _selectTimeSlot(BuildContext context) {
+    final slots = [
+      '09:00 - 11:00',
+      '11:00 - 13:00',
+      '14:00 - 16:00',
+      '16:00 - 18:00',
+      '18:00 - 20:00',
+    ];
+
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Выберите интервал времени',
+                style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+              ),
+              const SizedBox(height: 12),
+              ...slots.map((slot) {
+                final isSelected = slot == _selectedTimeText;
+                return ListTile(
+                  leading: Icon(
+                    Icons.access_time,
+                    color: isSelected ? Theme.of(context).colorScheme.primary : null,
+                  ),
+                  title: Text(
+                    slot,
+                    style: TextStyle(
+                      fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                  trailing: isSelected ? const Icon(Icons.check, color: Colors.blue) : null,
+                  onTap: () {
+                    setState(() {
+                      _selectedTimeText = slot;
+                    });
+                    Navigator.pop(ctx);
+                  },
+                );
+              }),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Future<void> _submitOrder(Master? selectedMaster) async {
@@ -39,8 +117,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       masterName: selectedMaster?.name ?? 'Выбранный мастер',
       masterSpecialty: selectedMaster?.specialty ?? 'Специалист по ремонту',
       masterPhone: selectedMaster?.phone ?? '+373 69 000 000',
-      date: '15 Октября 2026',
-      time: '14:00 - 16:00',
+      date: _selectedDateText,
+      time: _selectedTimeText,
       address: _addressController.text.trim(),
       price: selectedMaster?.hourlyRate ?? 350.0,
       status: 'Ожидает',
@@ -232,9 +310,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                 children: [
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () {},
+                      onPressed: () => _selectDate(context),
                       icon: const Icon(Icons.calendar_today_outlined),
-                      label: const Text('15 Октября 2026'),
+                      label: Text(_selectedDateText),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(
@@ -246,9 +324,9 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: () {},
+                      onPressed: () => _selectTimeSlot(context),
                       icon: const Icon(Icons.access_time_outlined),
-                      label: const Text('14:00 - 16:00'),
+                      label: Text(_selectedTimeText),
                       style: OutlinedButton.styleFrom(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         shape: RoundedRectangleBorder(

@@ -60,7 +60,14 @@ class MasterDetailScreen extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.share_outlined),
-            onPressed: () {},
+            onPressed: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Ссылка на профиль мастера ${master.name} скопирована!'),
+                  duration: const Duration(seconds: 2),
+                ),
+              );
+            },
           ),
         ],
       ),
@@ -272,7 +279,90 @@ class MasterDetailScreen extends StatelessWidget {
                   ),
                 ),
                 TextButton(
-                  onPressed: () {},
+                  onPressed: () {
+                    showModalBottomSheet(
+                      context: context,
+                      isScrollControlled: true,
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+                      ),
+                      builder: (ctx) {
+                        return DraggableScrollableSheet(
+                          expand: false,
+                          initialChildSize: 0.6,
+                          maxChildSize: 0.9,
+                          builder: (_, scrollController) {
+                            return Padding(
+                              padding: const EdgeInsets.all(20.0),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Все отзывы клиентов',
+                                        style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                      ),
+                                      IconButton(
+                                        icon: const Icon(Icons.close),
+                                        onPressed: () => Navigator.pop(ctx),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Expanded(
+                                    child: ListView.separated(
+                                      controller: scrollController,
+                                      itemCount: mockReviews.length,
+                                      separatorBuilder: (_, __) => const SizedBox(height: 10),
+                                      itemBuilder: (_, index) {
+                                        final review = mockReviews[index];
+                                        return Card(
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(12.0),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Row(
+                                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                                  children: [
+                                                    Text(
+                                                      review.userName,
+                                                      style: const TextStyle(fontWeight: FontWeight.bold),
+                                                    ),
+                                                    Row(
+                                                      children: [
+                                                        Icon(Icons.star, size: 16, color: Colors.amber.shade700),
+                                                        Text(' ${review.rating}'),
+                                                      ],
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 6),
+                                                Text(review.comment),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  review.date,
+                                                  style: Theme.of(ctx).textTheme.labelSmall,
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    );
+                  },
                   child: const Text('Все отзывы'),
                 ),
               ],
