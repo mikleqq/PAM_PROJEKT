@@ -27,8 +27,13 @@ void initRouter({String initialLocation = '/login'}) {
       GoRoute(
         path: '/create-order',
         builder: (context, state) {
-          final masterId = state.uri.queryParameters['masterId'];
-          return CreateOrderScreen(masterId: masterId);
+          final q = state.uri.queryParameters;
+          return CreateOrderScreen(
+            masterId: q['masterId'],
+            initialCategory: q['category'],
+            initialDescription: q['description'],
+            initialAddress: q['address'],
+          );
         },
       ),
 

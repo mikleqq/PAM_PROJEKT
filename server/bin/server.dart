@@ -332,10 +332,12 @@ Future<void> _handleRequest(HttpRequest req) async {
     // 5. Masters list (with search, page, limit)
     if (path == '/masters' && method == 'GET') {
       final search = (req.uri.queryParameters['search'] ?? '').toLowerCase();
+      final category = req.uri.queryParameters['category'] ?? '';
       final page = int.tryParse(req.uri.queryParameters['page'] ?? '1') ?? 1;
       final limit = int.tryParse(req.uri.queryParameters['limit'] ?? '20') ?? 20;
 
       var filtered = mastersDb.where((m) {
+        if (category.isNotEmpty && m['categoryId'] != category) return false;
         if (search.isEmpty) return true;
         final name = (m['name'] as String).toLowerCase();
         final specialty = (m['specialty'] as String).toLowerCase();

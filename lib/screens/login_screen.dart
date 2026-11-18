@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../data/auth_api.dart';
 import '../data/result.dart';
+import '../models/masters_model.dart';
+import '../models/orders_model.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -110,6 +112,9 @@ class _LoginScreenState extends State<LoginScreen> {
             duration: const Duration(seconds: 2),
           ),
         );
+        // Загрузить данные уже под новым токеном (до входа запросы получали 401).
+        context.read<MastersModel>().load(search: '', categoryId: '');
+        context.read<OrdersModel>().load(search: '');
         context.go('/catalog');
       case Err(:final msg):
         ScaffoldMessenger.of(context).showSnackBar(

@@ -55,6 +55,14 @@ class OrdersModel extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Сброс состояния при выходе из аккаунта.
+  void reset() {
+    _orders = const [];
+    _search = '';
+    _error = null;
+    notifyListeners();
+  }
+
   Future<String?> createOrder(ServiceOrder draft) async {
     final result = await _repository.create(draft);
     switch (result) {

@@ -8,8 +8,17 @@ import '../models/orders_model.dart';
 
 class CreateOrderScreen extends StatefulWidget {
   final String? masterId;
+  final String? initialCategory;
+  final String? initialDescription;
+  final String? initialAddress;
 
-  const CreateOrderScreen({super.key, this.masterId});
+  const CreateOrderScreen({
+    super.key,
+    this.masterId,
+    this.initialCategory,
+    this.initialDescription,
+    this.initialAddress,
+  });
 
   @override
   State<CreateOrderScreen> createState() => _CreateOrderScreenState();
@@ -17,12 +26,48 @@ class CreateOrderScreen extends StatefulWidget {
 
 class _CreateOrderScreenState extends State<CreateOrderScreen> {
   final _formKey = GlobalKey<FormState>();
-  final _descriptionController = TextEditingController();
-  final _addressController = TextEditingController(text: 'г. Кишинев, ул. Штефан чел Маре 132');
+  late final TextEditingController _descriptionController;
+  late final TextEditingController _addressController;
   String _selectedPaymentMethod = 'cash';
-  String _selectedCategory = 'Сантехника';
-  String _selectedDateText = '15 Октября 2026';
+  String? _selectedCategory;
+  late DateTime _selectedDate;
   String _selectedTimeText = '14:00 - 16:00';
+  bool _busy = false;
+
+  static const _months = [
+    'Января',
+    'Февраля',
+    'Марта',
+    'Апреля',
+    'Мая',
+    'Июня',
+    'Июля',
+    'Августа',
+    'Сентября',
+    'Октября',
+    'Ноября',
+    'Декабря'
+  ];
+
+  String get _selectedDateText =>
+      '${_selectedDate.day} ${_months[_selectedDate.month - 1]} ${_selectedDate.year}';
+
+  @override
+  void initState() {
+    super.initState();
+    _descriptionController = TextEditingController(text: widget.initialDescription ?? '');
+    _addressController = TextEditingController(
+      text: widget.initialAddress ?? 'г. Кишинев, ул. Штефан чел Маре 132',
+    );
+    final now = DateTime.now();
+    _selectedDate = DateTime(now.year, now.month, now.day + 1); // завтра
+
+    // Категория: из повторяемого заказа или по специализации выбранного мастера.
+    final masters = context.read<MastersModel>();
+    final master = widget.masterId != null ? masters.byId(widget.masterId!) : null;
+    _selectedCategory = widget.initialCategory ??
+        (master != null ? masters.categoryById(master.categoryId)?.name : null);
+  }
 
   @override
   void dispose() {
@@ -32,20 +77,18 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   }
 
   Future<void> _selectDate(BuildContext context) async {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
     final pickedDate = await showDatePicker(
       context: context,
-      initialDate: DateTime(2026, 10, 15),
-      firstDate: DateTime(2026, 1, 1),
-      lastDate: DateTime(2027, 12, 31),
+      initialDate: _selectedDate.isBefore(today) ? today : _selectedDate,
+      firstDate: today,
+      lastDate: today.add(const Duration(days: 365)),
     );
 
     if (pickedDate != null) {
-      final months = [
-        'Января', 'Февраля', 'Марта', 'Апреля', 'Мая', 'Июня',
-        'Июля', 'Августа', 'Сентября', 'Октября', 'Ноября', 'Декабря'
-      ];
       setState(() {
-        _selectedDateText = '${pickedDate.day} ${months[pickedDate.month - 1]} ${pickedDate.year}';
+        _selectedDate = pickedDate;
       });
     }
   }
@@ -107,12 +150,13 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     );
   }
 
-  Future<void> _submitOrder(Master? selectedMaster) async {
-    if (!_formKey.currentState!.validate()) return;
+  Future<void> _submitOrder(Master? selectedMaster, String category, double price) async {
+    if (_busy || !_formKey.currentState!.validate()) return;
+    setState(() => _busy = true);
 
     final draft = ServiceOrder(
       id: '',
-      serviceName: _selectedCategory,
+      serviceName: category,
       description: _descriptionController.text.trim(),
       masterName: selectedMaster?.name ?? 'Выбранный мастер',
       masterSpecialty: selectedMaster?.specialty ?? 'Специалист по ремонту',
@@ -120,7 +164,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       date: _selectedDateText,
       time: _selectedTimeText,
       address: _addressController.text.trim(),
-      price: selectedMaster?.hourlyRate ?? 350.0,
+      price: price,
       status: 'Ожидает',
       paymentMethod: _selectedPaymentMethod == 'cash' ? 'Наличными мастеру' : 'Картой мастеру',
     );
@@ -128,6 +172,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     final error = await context.read<OrdersModel>().createOrder(draft);
 
     if (!mounted) return;
+    setState(() => _busy = false);
 
     if (error != null) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -143,11 +188,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
       ),
     );
 
-    if (context.canPop()) {
-      context.pop();
-    } else {
-      context.go('/orders');
-    }
+    // Показать созданный заказ во вкладке «Заказы».
+    context.go('/orders');
   }
 
   @override
@@ -157,6 +199,13 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
     final mastersModel = context.watch<MastersModel>();
     final categories = mastersModel.categories;
     final selectedMaster = widget.masterId != null ? mastersModel.byId(widget.masterId!) : null;
+    final categoryNames = categories.map((c) => c.name).toList();
+    final category = categoryNames.contains(_selectedCategory)
+        ? _selectedCategory
+        : (categoryNames.isNotEmpty ? categoryNames.first : null);
+    final categoryPrice =
+        categories.where((c) => c.name == category).map((c) => c.startingPrice).firstOrNull;
+    final price = selectedMaster?.hourlyRate ?? categoryPrice ?? 350.0;
 
     return Scaffold(
       appBar: AppBar(
@@ -224,9 +273,8 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
               // Service Type Dropdown Form Layout
               DropdownButtonFormField<String>(
-                value: categories.any((c) => c.name == _selectedCategory)
-                    ? _selectedCategory
-                    : (categories.isNotEmpty ? categories.first.name : 'Сантехника'),
+                key: ValueKey(category),
+                initialValue: category,
                 decoration: InputDecoration(
                   labelText: 'Категория услуги',
                   prefixIcon: const Icon(Icons.category_outlined),
@@ -356,50 +404,36 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                     color: colorScheme.outlineVariant.withValues(alpha: 0.5),
                   ),
                 ),
-                child: Column(
-                  children: [
-                    ListTile(
-                      leading: Radio<String>(
-                        value: 'cash',
-                        groupValue: _selectedPaymentMethod,
-                        onChanged: (val) {
-                          if (val != null) {
-                            setState(() {
-                              _selectedPaymentMethod = val;
-                            });
-                          }
+                child: RadioGroup<String>(
+                  groupValue: _selectedPaymentMethod,
+                  onChanged: (val) {
+                    if (val != null) setState(() => _selectedPaymentMethod = val);
+                  },
+                  child: Column(
+                    children: [
+                      ListTile(
+                        leading: const Radio<String>(value: 'cash'),
+                        title: const Text('Наличными мастеру'),
+                        subtitle: const Text('Оплата на месте по факту выполнения'),
+                        onTap: () {
+                          setState(() {
+                            _selectedPaymentMethod = 'cash';
+                          });
                         },
                       ),
-                      title: const Text('Наличными мастеру'),
-                      subtitle: const Text('Оплата на месте по факту выполнения'),
-                      onTap: () {
-                        setState(() {
-                          _selectedPaymentMethod = 'cash';
-                        });
-                      },
-                    ),
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: Radio<String>(
-                        value: 'card',
-                        groupValue: _selectedPaymentMethod,
-                        onChanged: (val) {
-                          if (val != null) {
-                            setState(() {
-                              _selectedPaymentMethod = val;
-                            });
-                          }
+                      const Divider(height: 1),
+                      ListTile(
+                        leading: const Radio<String>(value: 'card'),
+                        title: const Text('Картой через терминал мастера'),
+                        subtitle: const Text('Оплата на месте по факту выполнения'),
+                        onTap: () {
+                          setState(() {
+                            _selectedPaymentMethod = 'card';
+                          });
                         },
                       ),
-                      title: const Text('Картой через терминал мастера'),
-                      subtitle: const Text('Оплата на месте по факту выполнения'),
-                      onTap: () {
-                        setState(() {
-                          _selectedPaymentMethod = 'card';
-                        });
-                      },
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 24),
@@ -420,7 +454,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                         children: [
                           Text('Ориентировочная стоимость:', style: theme.textTheme.bodyMedium),
                           Text(
-                            '${selectedMaster?.hourlyRate.toStringAsFixed(0) ?? "350"} MDL',
+                            '${selectedMaster != null ? '' : 'от '}${price.toStringAsFixed(0)} MDL',
                             style: theme.textTheme.titleLarge?.copyWith(
                               fontWeight: FontWeight.bold,
                               color: colorScheme.primary,
@@ -446,16 +480,24 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                 width: double.infinity,
                 height: 52,
                 child: FilledButton(
-                  onPressed: () => _submitOrder(selectedMaster),
+                  onPressed: _busy || category == null
+                      ? null
+                      : () => _submitOrder(selectedMaster, category, price),
                   style: FilledButton.styleFrom(
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
                   ),
-                  child: const Text(
-                    'Подтвердить заказ',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                  ),
+                  child: _busy
+                      ? const SizedBox(
+                          height: 24,
+                          width: 24,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Text(
+                          'Подтвердить заказ',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
                 ),
               ),
             ],

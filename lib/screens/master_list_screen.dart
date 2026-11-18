@@ -15,17 +15,9 @@ class MasterListScreen extends StatefulWidget {
 
 class _MasterListScreenState extends State<MasterListScreen> {
   final _searchController = TextEditingController();
-  int _selectedCategoryIndex = 0;
 
-  final categoriesFilter = [
-    'Все мастера',
-    'Сантехника',
-    'Электрика',
-    'Клининг',
-    'Бытовая техника',
-    'Сборка мебели',
-    'Мастер на час',
-  ];
+  /// Последний поисковый запрос модели, уже показанный в поле ввода.
+  String? _syncedSearch;
 
   @override
   void dispose() {
@@ -34,56 +26,58 @@ class _MasterListScreenState extends State<MasterListScreen> {
   }
 
   void _showSortOptions(BuildContext context) {
+    final model = context.read<MastersModel>();
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) {
-        return Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Сортировка специалистов',
-                style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.bold,
-                    ),
-              ),
-              const SizedBox(height: 12),
-              ListTile(
-                leading: const Icon(Icons.star, color: Colors.amber),
-                title: const Text('По рейтингу (сначала высокий)'),
+        return StatefulBuilder(
+          builder: (ctx, setSheetState) {
+            Widget sortTile(MasterSort value, IconData icon, String title) {
+              final selected = model.sort == value;
+              return ListTile(
+                leading: Icon(icon, color: selected ? Theme.of(ctx).colorScheme.primary : null),
+                title: Text(title),
+                trailing: selected ? const Icon(Icons.check) : null,
                 onTap: () {
+                  model.setSort(value);
                   Navigator.pop(ctx);
-                  context.read<MastersModel>().load(search: _searchController.text.trim());
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Отсортировано по рейтингу'),
-                      duration: Duration(seconds: 1),
-                    ),
-                  );
                 },
+              );
+            }
+
+            return Padding(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Сортировка специалистов',
+                    style: Theme.of(ctx).textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.bold,
+                        ),
+                  ),
+                  const SizedBox(height: 12),
+                  sortTile(MasterSort.rating, Icons.star, 'По рейтингу (сначала высокий)'),
+                  const Divider(height: 1),
+                  sortTile(MasterSort.priceAsc, Icons.payments_outlined, 'По стоимости (сначала дешевле)'),
+                  const Divider(height: 1),
+                  SwitchListTile(
+                    secondary: const Icon(Icons.verified_user_outlined),
+                    title: const Text('Только проверенные мастера'),
+                    value: model.verifiedOnly,
+                    onChanged: (val) {
+                      model.setVerifiedOnly(val);
+                      setSheetState(() {});
+                    },
+                  ),
+                ],
               ),
-              const Divider(height: 1),
-              ListTile(
-                leading: const Icon(Icons.payments_outlined),
-                title: const Text('По стоимости за час'),
-                onTap: () {
-                  Navigator.pop(ctx);
-                  context.read<MastersModel>().load(search: _searchController.text.trim());
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Отсортировано по стоимости'),
-                      duration: Duration(seconds: 1),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
@@ -106,6 +100,14 @@ class _MasterListScreenState extends State<MasterListScreen> {
       );
     } else {
       final masters = model.masters;
+      // Поиск мог прийти из каталога — показать его в поле, не трогая ввод пользователя.
+      if (_syncedSearch != model.search) {
+        _syncedSearch = model.search;
+        _searchController.value = TextEditingValue(
+          text: model.search,
+          selection: TextSelection.collapsed(offset: model.search.length),
+        );
+      }
 
       bodyContent = Column(
         children: [
@@ -116,7 +118,7 @@ class _MasterListScreenState extends State<MasterListScreen> {
               controller: _searchController,
               textInputAction: TextInputAction.search,
               onSubmitted: (query) {
-                context.read<MastersModel>().load(search: query);
+                context.read<MastersModel>().load(search: query.trim());
               },
               decoration: InputDecoration(
                 hintText: 'Поиск по имени, услуге или навыку...',
@@ -126,15 +128,18 @@ class _MasterListScreenState extends State<MasterListScreen> {
                     context.read<MastersModel>().load(search: _searchController.text.trim());
                   },
                 ),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          context.read<MastersModel>().load(search: '');
-                        },
-                      )
-                    : null,
+                suffixIcon: ValueListenableBuilder<TextEditingValue>(
+                  valueListenable: _searchController,
+                  builder: (context, value, _) => value.text.isEmpty
+                      ? const SizedBox.shrink()
+                      : IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _searchController.clear();
+                            context.read<MastersModel>().load(search: '');
+                          },
+                        ),
+                ),
                 filled: true,
                 fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.4),
                 border: OutlineInputBorder(
@@ -145,26 +150,23 @@ class _MasterListScreenState extends State<MasterListScreen> {
             ),
           ),
 
-          // Horizontal Filter Chips
+          // Horizontal Filter Chips (категории с сервера)
           SizedBox(
             height: 48,
             child: ListView.separated(
               scrollDirection: Axis.horizontal,
               padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: categoriesFilter.length,
+              itemCount: model.categories.length + 1,
               separatorBuilder: (_, __) => const SizedBox(width: 8),
               itemBuilder: (context, index) {
-                final isSelected = index == _selectedCategoryIndex;
-                final filterText = categoriesFilter[index];
+                final category = index == 0 ? null : model.categories[index - 1];
+                final id = category?.id ?? '';
+                final isSelected = model.categoryId == id;
                 return FilterChip(
-                  label: Text(filterText),
+                  label: Text(category?.name ?? 'Все мастера'),
                   selected: isSelected,
-                  onSelected: (selected) {
-                    setState(() {
-                      _selectedCategoryIndex = index;
-                    });
-                    final searchParam = index == 0 ? '' : filterText;
-                    context.read<MastersModel>().load(search: searchParam);
+                  onSelected: (_) {
+                    context.read<MastersModel>().load(categoryId: id);
                   },
                   selectedColor: colorScheme.primaryContainer,
                   labelStyle: TextStyle(
@@ -185,17 +187,22 @@ class _MasterListScreenState extends State<MasterListScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Найдено мастеров: ${masters.length}',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: colorScheme.onSurfaceVariant,
-                    fontWeight: FontWeight.w500,
+                Expanded(
+                  child: Text(
+                    'Найдено мастеров: ${masters.length}'
+                    '${model.verifiedOnly ? ' (проверенные)' : ''}',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: colorScheme.onSurfaceVariant,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 TextButton.icon(
                   onPressed: () => _showSortOptions(context),
                   icon: const Icon(Icons.swap_vert, size: 18),
-                  label: const Text('По рейтингу'),
+                  label: Text(model.sort == MasterSort.rating ? 'По рейтингу' : 'По цене'),
                 ),
               ],
             ),

@@ -1,10 +1,11 @@
 // lib/screens/user_profile_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../data/auth_api.dart';
-import '../data/repositories/http_master_repository.dart';
-import '../data/repositories/http_order_repository.dart';
+import '../models/masters_model.dart';
+import '../models/orders_model.dart';
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -17,6 +18,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   String _name = '';
   String _email = '';
   final List<String> _addresses = ['г. Кишинев, ул. Штефан чел Маре 132'];
+  bool _notificationsEnabled = true;
+  static const _supportPhone = '+373 22 000 000';
 
   @override
   void initState() {
@@ -256,7 +259,8 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
           ],
         ),
         content: const Text(
-          'Оператор поддержки онлайн. Задайте любой вопрос по поводу поиска мастеров, заказов или качества услуг.',
+          'Оператор поддержки на связи 24/7 по телефону $_supportPhone. '
+          'Задайте любой вопрос по поводу поиска мастеров, заказов или качества услуг.',
         ),
         actions: [
           TextButton(
@@ -264,20 +268,36 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             child: const Text('Закрыть'),
           ),
           FilledButton.icon(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(ctx);
+              await Clipboard.setData(const ClipboardData(text: _supportPhone));
+              if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Соединение с оператором установлено (Чат открыт)'),
+                  content: Text('Номер поддержки $_supportPhone скопирован'),
                 ),
               );
             },
-            icon: const Icon(Icons.chat),
-            label: const Text('Начать чат'),
+            icon: const Icon(Icons.phone),
+            label: const Text('Скопировать номер'),
           ),
         ],
       ),
     );
+  }
+
+  /// Выход: очистить токен и данные прошлого пользователя.
+  Future<void> _signOut(BuildContext context) async {
+    final masters = context.read<MastersModel>();
+    final orders = context.read<OrdersModel>();
+    await context.read<AuthApi>().logout();
+    masters.reset();
+    orders.reset();
+  }
+
+  Future<void> _switchAccount(BuildContext context) async {
+    await _signOut(context);
+    if (context.mounted) context.go('/login');
   }
 
   Future<void> _confirmLogout(BuildContext context) async {
@@ -303,7 +323,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     );
 
     if (ok == true && context.mounted) {
-      await context.read<AuthApi>().logout();
+      await _signOut(context);
       if (!context.mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -320,9 +340,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
-    final masterRepo = context.watch<HttpMasterRepository>();
-    final orderRepo = context.watch<HttpOrderRepository>();
-    final isErrorSimulated = masterRepo.simulateError || orderRepo.simulateError;
 
     return Scaffold(
       appBar: AppBar(
@@ -389,49 +406,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
             ),
             const SizedBox(height: 20),
 
-            // Fault Simulation Section
-            Card(
-              elevation: 0,
-              color: isErrorSimulated
-                  ? colorScheme.errorContainer.withValues(alpha: 0.3)
-                  : colorScheme.surfaceContainerLow,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-                side: BorderSide(
-                  color: isErrorSimulated
-                      ? colorScheme.error
-                      : colorScheme.outlineVariant.withValues(alpha: 0.5),
-                ),
-              ),
-              child: SwitchListTile(
-                secondary: Icon(
-                  Icons.bug_report_outlined,
-                  color: isErrorSimulated ? colorScheme.error : colorScheme.primary,
-                ),
-                title: const Text(
-                  'Симулировать сбой сети',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle: const Text('Переключает режим сбоя (ErrorView с кнопкой "Повторить")'),
-                value: isErrorSimulated,
-                onChanged: (val) {
-                  setState(() {
-                    masterRepo.simulateError = val;
-                    orderRepo.simulateError = val;
-                  });
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        val ? 'Авария сети включена!' : 'Подключение к сети восстановлено',
-                      ),
-                      duration: const Duration(seconds: 1),
-                    ),
-                  );
-                },
-              ),
-            ),
-            const SizedBox(height: 20),
-
             // Profile Sections List
             Card(
               elevation: 0,
@@ -456,8 +430,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                     title: const Text('Уведомления'),
                     subtitle: const Text('Пуш-уведомления и SMS'),
                     trailing: Switch(
-                      value: true,
+                      value: _notificationsEnabled,
                       onChanged: (val) {
+                        setState(() => _notificationsEnabled = val);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
                             content: Text(
@@ -487,11 +462,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               width: double.infinity,
               height: 50,
               child: OutlinedButton.icon(
-                onPressed: () {
-                  context.go('/login');
-                },
-                icon: const Icon(Icons.lock_outline),
-                label: const Text('Перейти на экран входа'),
+                onPressed: () => _switchAccount(context),
+                icon: const Icon(Icons.switch_account_outlined),
+                label: const Text('Сменить аккаунт'),
                 style: OutlinedButton.styleFrom(
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),

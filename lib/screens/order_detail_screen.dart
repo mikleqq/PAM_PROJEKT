@@ -1,7 +1,10 @@
 // lib/screens/order_detail_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../data/models.dart';
+import '../models/masters_model.dart';
 import '../models/orders_model.dart';
 import '../widgets/status_badge.dart';
 
@@ -45,6 +48,18 @@ class OrderDetailScreen extends StatelessWidget {
         );
       }
     }
+  }
+
+  /// Открывает форму заказа, заполненную данными завершённого заказа.
+  void _repeatOrder(BuildContext context, ServiceOrder order) {
+    final master = context.read<MastersModel>().byName(order.masterName);
+    final params = <String, String>{
+      if (master != null) 'masterId': master.id,
+      'category': order.serviceName,
+      'description': order.description,
+      'address': order.address,
+    };
+    context.push(Uri(path: '/create-order', queryParameters: params).toString());
   }
 
   @override
@@ -227,10 +242,13 @@ class OrderDetailScreen extends StatelessWidget {
                       ),
                     ),
                     IconButton.filledTonal(
-                      onPressed: () {
+                      tooltip: 'Скопировать номер',
+                      onPressed: () async {
+                        await Clipboard.setData(ClipboardData(text: currentOrder.masterPhone));
+                        if (!context.mounted) return;
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Звонок мастеру: ${currentOrder.masterPhone}'),
+                            content: Text('Номер ${currentOrder.masterPhone} скопирован — позвоните мастеру'),
                           ),
                         );
                       },
@@ -345,13 +363,7 @@ class OrderDetailScreen extends StatelessWidget {
                 width: double.infinity,
                 height: 50,
                 child: FilledButton.icon(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Заказ добавлен на повторное оформление!'),
-                      ),
-                    );
-                  },
+                  onPressed: () => _repeatOrder(context, currentOrder),
                   icon: const Icon(Icons.refresh),
                   label: const Text('Повторить заказ'),
                 ),

@@ -1,5 +1,6 @@
 // lib/screens/master_detail_screen.dart
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import 'package:home_services/data/models.dart';
@@ -60,10 +61,19 @@ class MasterDetailScreen extends StatelessWidget {
           ),
           IconButton(
             icon: const Icon(Icons.share_outlined),
-            onPressed: () {
+            tooltip: 'Поделиться',
+            onPressed: () async {
+              await Clipboard.setData(ClipboardData(
+                text: '${master.name} — ${master.specialty}\n'
+                    'Рейтинг ${master.rating.toStringAsFixed(1)}, '
+                    '${master.hourlyRate.toStringAsFixed(0)} MDL/ч\n'
+                    'Телефон: ${master.phone}\n'
+                    'ПрофиСервис: /masters/${master.id}',
+              ));
+              if (!context.mounted) return;
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Ссылка на профиль мастера ${master.name} скопирована!'),
+                  content: Text('Контакты мастера ${master.name} скопированы в буфер обмена'),
                   duration: const Duration(seconds: 2),
                 ),
               );
@@ -127,10 +137,14 @@ class MasterDetailScreen extends StatelessWidget {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(
-                          master.name,
-                          style: theme.textTheme.titleLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
+                        Flexible(
+                          child: Text(
+                            master.name,
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
                         if (master.isVerified) ...[
@@ -244,10 +258,19 @@ class MasterDetailScreen extends StatelessWidget {
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
                   children: [
-                    InfoRow(
-                      icon: Icons.phone_outlined,
-                      label: 'Телефон',
-                      value: master.phone,
+                    InkWell(
+                      onTap: () async {
+                        await Clipboard.setData(ClipboardData(text: master.phone));
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Номер ${master.phone} скопирован')),
+                        );
+                      },
+                      child: InfoRow(
+                        icon: Icons.phone_outlined,
+                        label: 'Телефон',
+                        value: master.phone,
+                      ),
                     ),
                     const Divider(height: 12),
                     InfoRow(
@@ -272,10 +295,14 @@ class MasterDetailScreen extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Отзывы клиентов (${mockReviews.length})',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Text(
+                    'Отзывы клиентов (${mockReviews.length})',
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 TextButton(

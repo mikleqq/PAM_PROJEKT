@@ -5,7 +5,12 @@ import '../models.dart';
 import '../result.dart';
 
 abstract class MasterRepository {
-  Future<Result<List<Master>>> fetchAll({int page = 1, int limit = 20, String? search});
+  Future<Result<List<Master>>> fetchAll({
+    int page = 1,
+    int limit = 20,
+    String? search,
+    String? categoryId,
+  });
   Future<Result<Master>> fetchById(String id);
   Future<Result<Master>> toggleFavorite(String id);
   Future<Result<List<ServiceCategory>>> fetchCategories();

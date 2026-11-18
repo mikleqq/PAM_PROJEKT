@@ -23,6 +23,18 @@ class _ServicesCatalogScreenState extends State<ServicesCatalogScreen> {
     super.dispose();
   }
 
+  void _openSearch(BuildContext context, String query) {
+    context.read<MastersModel>().load(search: query.trim(), categoryId: '');
+    context.go('/masters');
+  }
+
+  void _openAllMasters(BuildContext context) {
+    context.read<MastersModel>()
+      ..setVerifiedOnly(false)
+      ..load(search: '', categoryId: '');
+    context.go('/masters');
+  }
+
   void _showNotificationsSheet(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -104,7 +116,17 @@ class _ServicesCatalogScreenState extends State<ServicesCatalogScreen> {
                 title: const Text('Сначала с высоким рейтингом'),
                 onTap: () {
                   Navigator.pop(ctx);
-                  context.read<MastersModel>().load();
+                  context.read<MastersModel>().setSort(MasterSort.rating);
+                  context.go('/masters');
+                },
+              ),
+              const Divider(height: 1),
+              ListTile(
+                leading: const Icon(Icons.payments_outlined),
+                title: const Text('Сначала дешевле'),
+                onTap: () {
+                  Navigator.pop(ctx);
+                  context.read<MastersModel>().setSort(MasterSort.priceAsc);
                   context.go('/masters');
                 },
               ),
@@ -114,7 +136,7 @@ class _ServicesCatalogScreenState extends State<ServicesCatalogScreen> {
                 title: const Text('Только проверенные мастера'),
                 onTap: () {
                   Navigator.pop(ctx);
-                  context.read<MastersModel>().load();
+                  context.read<MastersModel>().setVerifiedOnly(true);
                   context.go('/masters');
                 },
               ),
@@ -142,7 +164,7 @@ class _ServicesCatalogScreenState extends State<ServicesCatalogScreen> {
       );
     } else {
       final categories = model.categories;
-      final topMasters = model.masters.take(3).toList();
+      final topMasters = model.topRated(3);
 
       bodyContent = SingleChildScrollView(
         padding: const EdgeInsets.all(16.0),
@@ -153,18 +175,12 @@ class _ServicesCatalogScreenState extends State<ServicesCatalogScreen> {
             TextField(
               controller: _searchController,
               textInputAction: TextInputAction.search,
-              onSubmitted: (query) {
-                context.read<MastersModel>().load(search: query);
-                context.go('/masters');
-              },
+              onSubmitted: (query) => _openSearch(context, query),
               decoration: InputDecoration(
                 hintText: 'Поиск услуги или мастера...',
                 prefixIcon: IconButton(
                   icon: const Icon(Icons.search),
-                  onPressed: () {
-                    context.read<MastersModel>().load(search: _searchController.text.trim());
-                    context.go('/masters');
-                  },
+                  onPressed: () => _openSearch(context, _searchController.text),
                 ),
                 suffixIcon: IconButton(
                   icon: const Icon(Icons.tune),
@@ -184,17 +200,18 @@ class _ServicesCatalogScreenState extends State<ServicesCatalogScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Категории услуг',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Text(
+                    'Категории услуг',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 TextButton(
-                  onPressed: () {
-                    context.read<MastersModel>().load(search: '');
-                    context.go('/masters');
-                  },
+                  onPressed: () => _openAllMasters(context),
                   child: Text('Все (${categories.length})'),
                 ),
               ],
@@ -217,7 +234,7 @@ class _ServicesCatalogScreenState extends State<ServicesCatalogScreen> {
                 return ServiceCategoryCard(
                   category: category,
                   onTap: () {
-                    context.read<MastersModel>().load(search: category.name);
+                    context.read<MastersModel>().load(search: '', categoryId: category.id);
                     context.go('/masters');
                   },
                 );
@@ -229,17 +246,18 @@ class _ServicesCatalogScreenState extends State<ServicesCatalogScreen> {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  'Рекомендуемые мастера',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
+                Expanded(
+                  child: Text(
+                    'Рекомендуемые мастера',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.bold,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ),
                 TextButton(
-                  onPressed: () {
-                    context.read<MastersModel>().load(search: '');
-                    context.go('/masters');
-                  },
+                  onPressed: () => _openAllMasters(context),
                   child: const Text('Показать всех'),
                 ),
               ],

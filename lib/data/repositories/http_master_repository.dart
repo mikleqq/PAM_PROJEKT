@@ -34,13 +34,19 @@ class HttpMasterRepository implements MasterRepository {
   }
 
   @override
-  Future<Result<List<Master>>> fetchAll({int page = 1, int limit = 20, String? search}) async {
+  Future<Result<List<Master>>> fetchAll({
+    int page = 1,
+    int limit = 20,
+    String? search,
+    String? categoryId,
+  }) async {
     if (simulateError) return const Err('Нет сети — повторите попытку');
     try {
       final uri = Uri.parse('$baseUrl/masters').replace(queryParameters: {
         'page': '$page',
         'limit': '$limit',
         if (search != null && search.isNotEmpty) 'search': search,
+        if (categoryId != null && categoryId.isNotEmpty) 'category': categoryId,
       });
 
       final res = await http.get(uri, headers: await _headers()).timeout(_timeout);
