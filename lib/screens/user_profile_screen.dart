@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../data/auth_api.dart';
+import '../data/repositories/http_master_repository.dart';
+import '../data/repositories/http_order_repository.dart';
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -14,7 +16,7 @@ class UserProfileScreen extends StatefulWidget {
 class _UserProfileScreenState extends State<UserProfileScreen> {
   String _name = '';
   String _email = '';
-  List<String> _addresses = ['г. Кишинев, ул. Штефан чел Маре 132'];
+  final List<String> _addresses = ['г. Кишинев, ул. Штефан чел Маре 132'];
 
   @override
   void initState() {
@@ -318,6 +320,9 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colorScheme = theme.colorScheme;
+    final masterRepo = context.watch<HttpMasterRepository>();
+    final orderRepo = context.watch<HttpOrderRepository>();
+    final isErrorSimulated = masterRepo.simulateError || orderRepo.simulateError;
 
     return Scaffold(
       appBar: AppBar(
@@ -380,6 +385,49 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                     ),
                   ],
                 ),
+              ),
+            ),
+            const SizedBox(height: 20),
+
+            // Fault Simulation Section
+            Card(
+              elevation: 0,
+              color: isErrorSimulated
+                  ? colorScheme.errorContainer.withValues(alpha: 0.3)
+                  : colorScheme.surfaceContainerLow,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+                side: BorderSide(
+                  color: isErrorSimulated
+                      ? colorScheme.error
+                      : colorScheme.outlineVariant.withValues(alpha: 0.5),
+                ),
+              ),
+              child: SwitchListTile(
+                secondary: Icon(
+                  Icons.bug_report_outlined,
+                  color: isErrorSimulated ? colorScheme.error : colorScheme.primary,
+                ),
+                title: const Text(
+                  'Симулировать сбой сети',
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: const Text('Переключает режим сбоя (ErrorView с кнопкой "Повторить")'),
+                value: isErrorSimulated,
+                onChanged: (val) {
+                  setState(() {
+                    masterRepo.simulateError = val;
+                    orderRepo.simulateError = val;
+                  });
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        val ? 'Авария сети включена!' : 'Подключение к сети восстановлено',
+                      ),
+                      duration: const Duration(seconds: 1),
+                    ),
+                  );
+                },
               ),
             ),
             const SizedBox(height: 20),

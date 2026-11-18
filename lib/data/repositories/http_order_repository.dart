@@ -16,6 +16,8 @@ class HttpOrderRepository implements OrderRepository {
   final TokenStore tokens;
   final void Function()? onUnauthorized;
 
+  bool simulateError = false; // Toggle to switch offline/error mode
+
   HttpOrderRepository(this.baseUrl, this.tokens, {this.onUnauthorized});
 
   static const _timeout = Duration(seconds: 8);
@@ -33,6 +35,7 @@ class HttpOrderRepository implements OrderRepository {
 
   @override
   Future<Result<List<ServiceOrder>>> fetchAll({int page = 1, int limit = 20, String? search}) async {
+    if (simulateError) return const Err('Нет сети — повторите попытку');
     try {
       final uri = Uri.parse('$baseUrl/orders').replace(queryParameters: {
         'page': '$page',
@@ -64,6 +67,7 @@ class HttpOrderRepository implements OrderRepository {
 
   @override
   Future<Result<ServiceOrder>> fetchById(String id) async {
+    if (simulateError) return const Err('Нет сети — повторите попытку');
     try {
       final res = await http
           .get(Uri.parse('$baseUrl/orders/$id'), headers: await _headers())
@@ -87,6 +91,7 @@ class HttpOrderRepository implements OrderRepository {
 
   @override
   Future<Result<ServiceOrder>> create(ServiceOrder order) async {
+    if (simulateError) return const Err('Нет сети — повторите попытку');
     try {
       final res = await http
           .post(
@@ -114,6 +119,7 @@ class HttpOrderRepository implements OrderRepository {
 
   @override
   Future<Result<void>> cancel(String id) async {
+    if (simulateError) return const Err('Нет сети — повторите попытку');
     try {
       final res = await http
           .delete(Uri.parse('$baseUrl/orders/$id'), headers: await _headers())

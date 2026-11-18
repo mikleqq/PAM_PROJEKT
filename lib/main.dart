@@ -38,6 +38,8 @@ Future<void> main() async {
     MultiProvider(
       providers: [
         Provider<AuthApi>(create: (_) => AuthApi(apiBase, tokens)),
+        Provider<HttpMasterRepository>.value(value: masterRepository),
+        Provider<HttpOrderRepository>.value(value: orderRepository),
         ChangeNotifierProvider(
           create: (_) => MastersModel(masterRepository)..load(),
         ),

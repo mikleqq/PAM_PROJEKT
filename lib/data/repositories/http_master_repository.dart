@@ -16,6 +16,8 @@ class HttpMasterRepository implements MasterRepository {
   final TokenStore tokens;
   final void Function()? onUnauthorized;
 
+  bool simulateError = false; // Toggle to switch offline/error mode
+
   HttpMasterRepository(this.baseUrl, this.tokens, {this.onUnauthorized});
 
   static const _timeout = Duration(seconds: 8);
@@ -33,6 +35,7 @@ class HttpMasterRepository implements MasterRepository {
 
   @override
   Future<Result<List<Master>>> fetchAll({int page = 1, int limit = 20, String? search}) async {
+    if (simulateError) return const Err('Нет сети — повторите попытку');
     try {
       final uri = Uri.parse('$baseUrl/masters').replace(queryParameters: {
         'page': '$page',
@@ -64,6 +67,7 @@ class HttpMasterRepository implements MasterRepository {
 
   @override
   Future<Result<Master>> fetchById(String id) async {
+    if (simulateError) return const Err('Нет сети — повторите попытку');
     try {
       final res = await http
           .get(Uri.parse('$baseUrl/masters/$id'), headers: await _headers())
@@ -87,6 +91,7 @@ class HttpMasterRepository implements MasterRepository {
 
   @override
   Future<Result<Master>> toggleFavorite(String id) async {
+    if (simulateError) return const Err('Нет сети — повторите попытку');
     try {
       final res = await http
           .post(Uri.parse('$baseUrl/masters/$id/favorite'), headers: await _headers())
@@ -110,6 +115,7 @@ class HttpMasterRepository implements MasterRepository {
 
   @override
   Future<Result<List<ServiceCategory>>> fetchCategories() async {
+    if (simulateError) return const Err('Нет сети — повторите попытку');
     try {
       final res = await http
           .get(Uri.parse('$baseUrl/categories'), headers: await _headers())
